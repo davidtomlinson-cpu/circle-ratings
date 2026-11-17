@@ -49,7 +49,7 @@ export default function SignUp() {
       <BackHeader title="" />
       <View>
         <H size={30}>Create your account</H>
-        <T size={13} color={c.textMuted}>Free while we’re in early testing</T>
+        <T size={13} color={c.textMuted}>Step 1 of 2</T>
       </View>
       {/* Apple and Google sign-in need the Apple Developer and Google Cloud setup first. */}
       <View style={{ gap: 12 }}>
@@ -63,6 +63,9 @@ export default function SignUp() {
       <Btn label={busy ? 'Creating account…' : 'Create account'} disabled={!valid || busy} onPress={submit} />
       <Pressable onPress={() => router.replace('/sign-in')} style={{ alignItems: 'center' }}>
         <T size={14} weight="bold" color={color.a300}>I already have an account</T>
+      </Pressable>
+      <Pressable onPress={() => router.push('/family-join')} style={{ alignItems: 'center' }}>
+        <T size={14} weight="bold" color={c.link}>Have a family invitation?</T>
       </Pressable>
       <T size={12} color={c.textMuted} center>By continuing you agree to the Terms and Privacy Policy.</T>
     </Page>

@@ -11,6 +11,19 @@ export function normaliseCode(raw: string) {
   return `${c.slice(0, 4)}-${c.slice(4)}`;
 }
 
+/** Family plan invitation: "heart abcd efgh" / "HEARTABCDEFGH" → "HEART-ABCD-EFGH", or null. */
+export function normaliseFamilyCode(raw: string) {
+  const c = raw.toUpperCase().replace(/[^A-Z0-9]/g, '').replace(/^HEART/, '');
+  if (c.length !== 8 || !/^[A-HJ-NP-Z2-9]{8}$/.test(c)) return null;
+  return `HEART-${c.slice(0, 4)}-${c.slice(4)}`;
+}
+
+export const familyInviteLink = (code: string) => Linking.createURL('/family-join', { queryParams: { code } });
+
+export function familyInviteMessage(name: string, code: string, planName: string) {
+  return `${name} has added you to their Circle Ratings ${planName}. No payment needed.\n\nOpen this link on your phone: ${familyInviteLink(code)}\nOr in the app, tap “Have a family invitation?” and enter ${code}`;
+}
+
 /** Link that opens the join screen when the app is installed. */
 export const inviteLink = (code: string) => Linking.createURL(`/join/${code}`);
 

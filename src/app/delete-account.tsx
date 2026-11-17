@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { BackHeader, Btn, Card, H, Page, Row, T } from '../components/ui';
+import { manage, storeName } from '../lib/billing';
 import { friendlyError, supabase } from '../lib/supabase';
 import { useApp } from '../state/store';
 import { c, color } from '../theme';
@@ -53,8 +54,17 @@ export default function DeleteAccount() {
         ))}
       </Card>
 
-      {/* When billing ships: tell people that deleting the account doesn't cancel an App Store / Google Play
-          subscription, and link to the store's subscription settings here. */}
+      {s.access?.source === 'own' && s.access.will_renew && (
+        <Card bg={color.a800} style={{ gap: 10 }}>
+          <T size={14} color={color.a100}>
+            Deleting your account doesn’t cancel your subscription. It’s billed by {storeName(s.access.store)}, so cancel it there first or you’ll keep being charged.
+          </T>
+          <Btn small label="Manage my subscription" onPress={() => manage(s.access?.store)} />
+        </Card>
+      )}
+      {s.access?.source === 'own' && s.access.tier !== 'individual' && (
+        <T size={13} color={c.textSoft}>People on your family plan will lose access.</T>
+      )}
 
       {!!error && <Card bg={color.a800} style={{ padding: 14 }}><T size={13} color={color.a100}>{error}</T></Card>}
 

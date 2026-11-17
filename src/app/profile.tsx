@@ -66,7 +66,24 @@ export default function Profile() {
         </View>
       </Row>
 
-      {/* Subscription and Family plan arrive with billing. */}
+      {s.access?.has_access && (
+        <Group title="Account">
+          <Item
+            first
+            label="Subscription"
+            sub={s.access.source === 'family'
+              ? `Member of ${s.access.owner_name}’s plan`
+              : `${{ individual: 'Individual', family: 'Family', extended: 'Extended family' }[s.access.tier ?? 'individual']}${s.access.in_trial ? ' · free trial' : ''}${s.access.will_renew ? '' : ' · cancelled'}`}
+            onPress={() => router.push('/subscription')}
+          />
+          <Item
+            label="Family plan"
+            sub={s.access.source === 'own' && s.access.tier !== 'individual' ? 'Invite family and manage places' : s.access.source === 'family' ? 'You’re on a family plan' : 'Upgrade to share with family'}
+            onPress={() => router.push('/family')}
+          />
+        </Group>
+      )}
+
       <Group title="Circle">
         <Item first label="Invite people" sub="Share your code" onPress={() => router.push('/invite')} />
         <Item label="Contacts" sub={s.circle.length ? `${s.circle.length} in your circle` : 'No one yet'} onPress={() => router.push('/contacts')} />
@@ -79,7 +96,7 @@ export default function Profile() {
 
       <Group title="Notifications">
         <Item first label="Circle activity" sub="When someone rates something you have" right={<Toggle value={s.settings.notify} onChange={(v) => s.setSetting('notify', v)} />} />
-        <Item label="Trial and billing reminders" right={<Toggle value={s.settings.remind} onChange={(v) => s.setSetting('remind', v)} />} />
+        <Item label="Billing tips and offers" sub="Required reminders, like your trial ending, are always sent" right={<Toggle value={s.settings.remind} onChange={(v) => s.setSetting('remind', v)} />} />
       </Group>
 
       <Pressable onPress={() => supabase.auth.signOut()} style={{ alignItems: 'center', paddingVertical: 8 }}>

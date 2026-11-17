@@ -32,7 +32,9 @@ export default function Welcome() {
         <Pressable onPress={() => router.push('/sign-in')} style={{ alignItems: 'center', paddingVertical: 6 }}>
           <T size={14} weight="bold" color={c.textSoft}>I already have an account</T>
         </Pressable>
-        {/* "Join with a family invite code" arrives with family plans. */}
+        <Pressable onPress={() => router.push('/family-join')} style={{ alignItems: 'center', paddingVertical: 2 }}>
+          <T size={14} weight="bold" color={c.link}>Join with a family invitation</T>
+        </Pressable>
       </View>
     </View>
   );

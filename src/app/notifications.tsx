@@ -30,6 +30,8 @@ export default function Notifications() {
   const open = (n: Notif) => {
     void markRead(n.read_at ? [] : [n.id]);
     if (n.kind === 'joined') router.push(`/friend/${n.actor_id}`);
+    else if (n.kind === 'family_joined') router.push('/family');
+    else if (n.kind === 'trial_ending') router.push('/trial-ending');
     else if (n.title_key) router.push(`/title/${encodeURIComponent(n.title_key)}`);
   };
 
@@ -50,6 +52,7 @@ export default function Notifications() {
               <View style={{ flex: 1, gap: 2 }}>
                 <T size={14}>{notifText(n, s.custom)}</T>
                 {!!n.body && <T size={13} color={c.textSoft}>“{n.body}”</T>}
+                {n.kind === 'trial_ending' && <T size={13} color={c.textSoft}>Keep your plan, change it or cancel</T>}
                 <T size={11} color={c.textMuted}>{ago(Date.parse(n.created_at))}</T>
               </View>
               {un && <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: color.a400, marginTop: 6 }} />}

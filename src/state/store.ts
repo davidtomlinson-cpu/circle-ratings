@@ -4,11 +4,25 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
+import { identify } from '../lib/billing';
 import { friendlyError, supabase } from '../lib/supabase';
 import { BUDGET, monthStart, type Custom } from '../data/model';
 import type { Cat } from '../data/types';
 
 export type Visibility = 'all' | 'some' | 'locked';
+export type Access = {
+  has_access: boolean;
+  source: 'own' | 'family' | 'none';
+  tier: 'individual' | 'family' | 'extended' | null;
+  period: 'month' | 'year' | null;
+  expires_at: string | null;
+  in_trial: boolean;
+  will_renew: boolean;
+  billing_issue: boolean;
+  store: 'app_store' | 'play_store' | 'test' | null;
+  owner_name: string | null;
+  own_sub_active: boolean;
+};
 export type Member = {
   id: string;
   name: string;
@@ -32,6 +46,7 @@ type UserData = {
   settings: Settings;
   circle: Member[];
   titleIds: Record<string, number>; // app key → titles.id
+  access: Access | null; // what the server says about this user's plan (cached for offline starts)
 };
 
 type Ui = {
@@ -48,6 +63,7 @@ type Actions = {
   refresh: () => Promise<void>;
   refreshCircle: () => Promise<void>;
   refreshUnread: () => Promise<void>;
+  refreshAccess: () => Promise<void>;
   removeMember: (id: string) => Promise<boolean>;
   toggleWant: (key: string, on?: boolean) => void;
   openSheet: (key: string) => void;
@@ -78,6 +94,7 @@ const EMPTY: UserData = {
   settings: { contribute: true, notify: true, remind: true },
   circle: [],
   titleIds: {},
+  access: null,
 };
 
 export type State = UserData & Ui & Actions;
@@ -108,12 +125,18 @@ export const useApp = create<State>()(
         setSession: async (userId) => {
           const prev = get().userId;
           if (!userId) {
+            void identify(null);
             set({ ...EMPTY, ready: true, loading: false, unread: 0 });
             return;
           }
           // A different account on this device: drop the old copy first.
           if (prev && prev !== userId) set({ ...EMPTY });
-          set({ userId, ready: true });
+          set({ userId });
+          void identify(userId);
+          // Know whether they've paid before showing anything, unless we have a cached answer for this user.
+          if (!get().access) await get().refreshAccess();
+          set({ ready: true });
+          void get().refreshAccess();
           await get().refresh();
         },
 
@@ -175,6 +198,13 @@ export const useApp = create<State>()(
           const { data, error } = await supabase.rpc('circle_overview');
           if (error) return get().showError(friendlyError(error));
           set({ circle: toMembers(data) });
+        },
+
+        refreshAccess: async () => {
+          if (!get().userId) return;
+          const { data, error } = await supabase.rpc('my_access').single();
+          // On failure (e.g. offline) keep the cached answer rather than locking someone out.
+          if (!error && data) set({ access: data as Access });
         },
 
         refreshUnread: async () => {
@@ -310,11 +340,11 @@ export const useApp = create<State>()(
     },
     {
       // Cached copy so the app opens instantly; refreshed from the server on launch.
-      name: 'circle-ratings-cache-v3',
+      name: 'circle-ratings-cache-v4',
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (s): UserData => ({
         userId: s.userId, name: s.name, want: s.want, my: s.my, rAt: s.rAt, fresh: s.fresh, custom: s.custom,
-        vis: s.vis, grants: s.grants, settings: s.settings, circle: s.circle, titleIds: s.titleIds,
+        vis: s.vis, grants: s.grants, settings: s.settings, circle: s.circle, titleIds: s.titleIds, access: s.access,
       }),
     },
   ),

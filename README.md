@@ -11,6 +11,7 @@ npm install
 npx expo start          # then press i / a, or scan with Expo Go
 npx expo start --web    # browser preview
 npm run typecheck
+npm run test:billing             # RevenueCat → subscription mapping
 ```
 
 ## Backend: Supabase
@@ -36,12 +37,26 @@ The app can't break the rules below, because the database itself enforces them (
   - Everyone's Top 20 only includes titles rated by at least 3 people.
 - **Deleting an account** (Profile → Delete account, via `delete_my_account()`) happens immediately. It removes all of the account's data: ratings, watchlist, comments, circle links in both directions, invite code, notifications, titles you added, and anonymous worldwide votes.
 
+- **Billing:** RevenueCat tells our server what each person has bought, and the server decides access. It works like this:
+  - **`subscriptions` table:** written only by the `revenuecat-webhook` and `sync-subscription` edge functions. Neither ever trusts the app.
+  - **`private.access()`:** gives access to your own active plan, or to a filled place on an active Family or Extended plan.
+  - **Ratings and comments:** refused by the database without access.
+  - **Family invitations (`HEART-XXXX-XXXX`):** only the owner can make them. Each works once, is limited by the plan's places, and is cancelled when replaced or the member is removed.
+  - **Day-5 trial reminder:** posted by an hourly `pg_cron` job. It's always sent, because it's a required reminder.
+
 ## What's built
 
 - **Accounts:** email sign-up, sign-in, password reset and in-app account deletion. You stay signed in between launches. App pages are locked when you're signed out.
 - **Tabs:** Today, Top 50, World, Trending, Watchlist and My list.
 - **Rating sheet:** tap or drag across the hearts. The app updates straight away. If the server refuses (for example, you're out of hearts), the change is undone and a message explains why.
 - **Title detail:** your rating, your circle's real ratings and average, and the Everyone average. Comments are saved to the server.
+- **Subscriptions:**
+  - **Paywall:** shown after sign-up and whenever there's no active plan. It has the 7-day trial timeline, a Monthly/Annual switch with "Save N%", the price and renewal disclosure, Restore purchases, and "Have a family invitation?".
+  - **Subscription page:** status, change plan, and manage or cancel in the store.
+  - **Family plan page:** Share, Copy, New code and Remove.
+  - **Join a family plan:** works from a link even when signed out.
+  - **Trial-ending page.**
+  - Account deletion warns a paying user to cancel in the store first.
 - **Pages:** Jar of hearts, Search & add (custom titles are saved to the server), Privacy, and Profile & settings (name, privacy, notification preferences, sign out).
 - **Circle:**
   - **Invite:** your personal code, with Share, Copy and Make a new code, plus a "Have a code?" box.
@@ -55,7 +70,7 @@ Trending still shows labelled sample rows until the daily backend job exists.
 
 ## Not built yet
 
-1. **Billing:** the free trial, plans, Subscription, Family plan codes and the trial reminder. This needs StoreKit 2 / Play Billing, and checking the family codes against Apple's and Google's rules.
+1. **Store setup:** the products, RevenueCat, the secrets and a development build. Step by step in [`docs/billing-setup.md`](docs/billing-setup.md). Real purchases can't be tested until that's done.
 2. **Push notifications:** these need `expo-notifications`, an EAS project and Apple/Google push credentials. In-app notifications already work.
    - **Invite links:** links only open the app if it's installed. Universal links (https links that open the app) need a domain and an app build.
 3. **Apple and Google sign-in:** needs an Apple Developer account and a Google Cloud OAuth client.
@@ -68,6 +83,7 @@ Trending still shows labelled sample rows until the daily backend job exists.
 
 ```bash
 npm run typecheck
+npm run test:billing             # RevenueCat → subscription mapping
 npx expo export --platform web   # then serve dist/ to try it in a browser
 ```
 
@@ -86,7 +102,9 @@ src/app/            routes (Expo Router). (tabs)/ = bottom tabs; other files sli
 src/components/     ui.tsx (text, buttons, chips, rows), Icon, Jar, RatingSheet, Toast, TitleRow
 src/data/           catalogue (generated from the prototype), model helpers, mock feeds
 src/state/store.ts  local copy of the user's server data, optimistic writes with rollback
-src/lib/            Supabase client, worldwide hook
+src/lib/            Supabase client, billing (RevenueCat), invites, worldwide hook
+supabase/functions  revenuecat-webhook, sync-subscription (+ _shared mapping and its tests)
+docs/               store rules check, billing setup checklist
 supabase/migrations database schema, security rules, catalogue seed
 src/theme.ts        design tokens
 ```

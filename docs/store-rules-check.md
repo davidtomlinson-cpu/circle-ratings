@@ -77,6 +77,10 @@ Separately, there are a few things the app needs before any store submission, wh
 4. **App Review notes.** Explain that family access comes only from an owner's in-app purchase, and provide a demo owner account and a demo member account.
 5. **Move to Apple Group Purchases when it's available.** Build the server so where a member's access comes from (our invitation or an Apple seat) can be swapped without changing the app screens.
 
+## What was built (18 Nov 2026)
+
+The recommended design is built. Purchases go only through the stores (via RevenueCat), and the server checks that the owner is subscribed before a family invitation works. Invitations are shared as links first, and the typed code is a backup behind "Have a family invitation?". Cancelling always happens in the store's own screen. The setup steps are in `docs/billing-setup.md`.
+
 ## Must-fix before any store submission
 
 - ~~In-app account deletion (Apple 5.1.1(v)).~~ **Done 18 Nov 2026.** When billing ships, the delete screen must also say that deleting the account doesn't cancel a store subscription, and link to the store's subscription settings.
