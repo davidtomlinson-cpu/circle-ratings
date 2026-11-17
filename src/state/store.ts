@@ -9,7 +9,14 @@ import { BUDGET, monthStart, type Custom } from '../data/model';
 import type { Cat } from '../data/types';
 
 export type Visibility = 'all' | 'some' | 'locked';
-export type Member = { id: string; name: string };
+export type Member = {
+  id: string;
+  name: string;
+  seesMine: boolean; // can they see my list (my privacy settings)
+  iSee: boolean; // can I see their list (their privacy settings)
+  rated: number | null; // only when I can see their list
+  topKey: string | null;
+};
 type Settings = { contribute: boolean; notify: boolean; remind: boolean };
 
 type UserData = {
@@ -33,11 +40,15 @@ type Ui = {
   sheet: { open: boolean; key: string; val: number };
   toast: { key: string; val: number; id: number } | null;
   error: { msg: string; id: number } | null;
+  unread: number;
 };
 
 type Actions = {
   setSession: (userId: string | null) => Promise<void>;
   refresh: () => Promise<void>;
+  refreshCircle: () => Promise<void>;
+  refreshUnread: () => Promise<void>;
+  removeMember: (id: string) => Promise<boolean>;
   toggleWant: (key: string, on?: boolean) => void;
   openSheet: (key: string) => void;
   setSheetVal: (val: number) => void;
@@ -91,11 +102,12 @@ export const useApp = create<State>()(
         sheet: { open: false, key: 'Movies#0', val: 0 },
         toast: null,
         error: null,
+        unread: 0,
 
         setSession: async (userId) => {
           const prev = get().userId;
           if (!userId) {
-            set({ ...EMPTY, ready: true, loading: false });
+            set({ ...EMPTY, ready: true, loading: false, unread: 0 });
             return;
           }
           // A different account on this device: drop the old copy first.
@@ -113,7 +125,7 @@ export const useApp = create<State>()(
             supabase.from('profiles').select('display_name, visibility, contribute_worldwide, notify_circle, remind_billing').eq('id', uid).single(),
             supabase.from('watchlist').select('title_id'),
             supabase.from('ratings').select('title_id, hearts, rated_at, from_watchlist').eq('user_id', uid),
-            supabase.from('circle_members').select('member_id').eq('owner_id', uid),
+            supabase.rpc('circle_overview'),
             supabase.from('visibility_grants').select('viewer_id'),
           ]);
           const err = titles.error || profile.error || want.error || ratings.error || circle.error || grants.error;
@@ -140,10 +152,6 @@ export const useApp = create<State>()(
             rAt[k] = Date.parse(r.rated_at);
             if (r.from_watchlist) fresh[k] = 1;
           }
-          const memberIds = circle.data.map((m) => m.member_id);
-          const names = memberIds.length
-            ? (await supabase.from('profiles').select('id, display_name').in('id', memberIds)).data ?? []
-            : [];
           const p = profile.data;
           set({
             loading: false,
@@ -156,9 +164,39 @@ export const useApp = create<State>()(
             name: p.display_name,
             vis: p.visibility as Visibility,
             settings: { contribute: p.contribute_worldwide, notify: p.notify_circle, remind: p.remind_billing },
-            circle: names.map((n) => ({ id: n.id, name: n.display_name || 'Someone' })),
+            circle: toMembers(circle.data),
             grants: Object.fromEntries(grants.data.map((g) => [g.viewer_id, true])),
           });
+          void get().refreshUnread();
+        },
+
+        refreshCircle: async () => {
+          const { data, error } = await supabase.rpc('circle_overview');
+          if (error) return get().showError(friendlyError(error));
+          set({ circle: toMembers(data) });
+        },
+
+        refreshUnread: async () => {
+          const uid = get().userId;
+          if (!uid) return;
+          const { count } = await supabase
+            .from('notifications')
+            .select('id', { count: 'exact', head: true })
+            .eq('user_id', uid)
+            .is('read_at', null);
+          set({ unread: count ?? 0 });
+        },
+
+        removeMember: async (id) => {
+          const prev = get().circle;
+          set({ circle: prev.filter((m) => m.id !== id) });
+          const { error } = await supabase.rpc('remove_from_circle', { p_member: id });
+          if (error) {
+            set({ circle: prev });
+            get().showError(friendlyError(error));
+            return false;
+          }
+          return true;
         },
 
         toggleWant: (key, on) => {
@@ -236,7 +274,7 @@ export const useApp = create<State>()(
         setVis: (vis) => {
           const prev = get().vis;
           set({ vis });
-          void write(() => supabase.from('profiles').update({ visibility: vis }).eq('id', get().userId!), { vis: prev });
+          void write(() => supabase.from('profiles').update({ visibility: vis }).eq('id', get().userId!), { vis: prev }).then((ok) => { if (ok) void get().refreshCircle(); });
         },
 
         setGrant: (memberId, on) => {
@@ -247,7 +285,7 @@ export const useApp = create<State>()(
               ? supabase.from('visibility_grants').insert({ owner_id: get().userId!, viewer_id: memberId })
               : supabase.from('visibility_grants').delete().eq('viewer_id', memberId)),
             { grants: prev },
-          );
+          ).then((ok) => { if (ok) void get().refreshCircle(); });
         },
 
         setSetting: (k, v) => {
@@ -270,7 +308,7 @@ export const useApp = create<State>()(
     },
     {
       // Cached copy so the app opens instantly; refreshed from the server on launch.
-      name: 'circle-ratings-cache-v2',
+      name: 'circle-ratings-cache-v3',
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (s): UserData => ({
         userId: s.userId, name: s.name, want: s.want, my: s.my, rAt: s.rAt, fresh: s.fresh, custom: s.custom,
@@ -279,6 +317,14 @@ export const useApp = create<State>()(
     },
   ),
 );
+
+type OverviewRow = { member_id: string; name: string; sees_mine: boolean; i_see_theirs: boolean; rated: number | null; top_title_key: string | null };
+function toMembers(rows: OverviewRow[] | null): Member[] {
+  return (rows ?? []).map((r) => ({
+    id: r.member_id, name: r.name, seesMine: r.sees_mine, iSee: r.i_see_theirs,
+    rated: r.rated == null ? null : Number(r.rated), topKey: r.top_title_key,
+  }));
+}
 
 // ---- Derived values -------------------------------------------------------
 

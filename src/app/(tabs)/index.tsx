@@ -1,4 +1,5 @@
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { Jar } from '../../components/Jar';
 import { Icon, type IconName } from '../../components/Icon';
@@ -6,6 +7,8 @@ import { RateBtn, TitleRow } from '../../components/TitleRow';
 import { Card, Disc, H, HeartGlyph, Page, Row, RoundIcon, SectionLabel, T, ChipRow } from '../../components/ui';
 import { TRENDING } from '../../data/feeds';
 import { BUDGET, fmtDay, nextMonth } from '../../data/model';
+import { notifText, type Notif } from '../../lib/notifications';
+import { supabase } from '../../lib/supabase';
 import { useWorldwide } from '../../lib/useWorldwide';
 import { jarLeft, useApp, useMe, wantKeys } from '../../state/store';
 import { c, color } from '../../theme';
@@ -28,13 +31,19 @@ export default function Today() {
   const left = jarLeft(s);
   const me = useMe();
   const loved = useWorldwide('All', true, 3);
+  const [latest, setLatest] = useState<Notif | null>(null);
+  useFocusEffect(
+    useCallback(() => {
+      void supabase.rpc('my_notifications', { p_limit: 1 }).then(({ data }) => setLatest((data as Notif[] | null)?.[0] ?? null));
+    }, [s.unread]), // eslint-disable-line react-hooks/exhaustive-deps
+  );
 
   return (
     <Page tabs>
       <Row>
         <H size={26} style={{ flex: 1 }}>Today</H>
         <RoundIcon name="search" label="Search" onPress={() => router.push('/search')} />
-        <RoundIcon name="bell" label="Notifications" onPress={() => router.push('/notifications')} />
+        <RoundIcon name="bell" label="Notifications" badge={s.unread} onPress={() => router.push('/notifications')} />
         <Pressable accessibilityLabel="Profile and settings" onPress={() => router.push('/profile')}>
           <Disc size={34} bg={color.s400} label={me.initial} />
         </Pressable>
@@ -49,11 +58,12 @@ export default function Today() {
           </View>
         </Row>
         <ChipRow>
+          <ActionChip icon="userPlus" label="Invite" href="/invite" />
+          <ActionChip icon="users" label="Contacts’ lists" href="/contacts" />
           <ActionChip icon="lock" label="Privacy" href="/privacy" />
           <ActionChip icon="bookmark" label="Watchlist" href="/watchlist" />
           <ActionChip icon="heart" label="My list" href="/mylist" />
           <ActionChip icon="settings" label="Settings" href="/profile" />
-          {/* Invite and Contacts' lists arrive with the circle slice. */}
         </ChipRow>
       </Card>
 
@@ -63,17 +73,23 @@ export default function Today() {
         <T size={12} color={c.textMuted} center>Each rating uses its hearts · refills on {fmtDay(nextMonth())}</T>
       </Pressable>
 
-      <Card>
+      <Card onPress={() => router.push(s.circle.length ? '/notifications' : '/invite')}>
         <Row>
-          <Icon name="users" size={20} color={color.s300} />
+          <Row gap={0}>
+            {s.circle.slice(0, 6).map((m, i) => (
+              <View key={m.id} style={{ borderWidth: 2, borderColor: c.card, borderRadius: 14, marginLeft: i ? -8 : 0 }}>
+                <Disc size={24} bg={color.a300} label={m.name[0]} display={false} />
+              </View>
+            ))}
+            {!s.circle.length && <Icon name="userPlus" size={20} color={color.s300} />}
+          </Row>
           <View style={{ flex: 1 }}>
             <SectionLabel>Your circle</SectionLabel>
-            <T size={13} numberOfLines={2}>
-              {s.circle.length
-                ? `${s.circle.length} ${s.circle.length === 1 ? 'person' : 'people'} · ${s.circle.slice(0, 3).map((m) => m.name).join(', ')}`
-                : 'Just you for now. Inviting family and friends is coming next.'}
+            <T size={13} numberOfLines={1}>
+              {latest ? notifText(latest, s.custom) : s.circle.length ? 'No activity yet' : 'Just you for now. Tap to invite family and friends.'}
             </T>
           </View>
+          <Icon name="chevronRight" size={18} />
         </Row>
       </Card>
 

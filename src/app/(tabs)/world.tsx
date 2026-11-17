@@ -1,4 +1,6 @@
+import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
+import { Icon } from '../../components/Icon';
 import { Animated, View } from 'react-native';
 import { AddBtn, openTitle } from '../../components/TitleRow';
 import { Btn, Card, Chip, ChipRow, Disc, H, HeartGlyph, HeartPill, ListRow, Page, Row, T } from '../../components/ui';
@@ -49,6 +51,16 @@ export default function World() {
           <T size={13} color={color.a200}>five-heart ratings so far</T>
         </Row>
         <T size={13} color={color.a100}>Updates live as people finish things from their watchlists.</T>
+      </Card>
+
+      <Card onPress={() => router.push('/top20')} style={{ paddingVertical: 14 }}>
+        <Row>
+          <View style={{ flex: 1 }}>
+            <T size={14} weight="bold">Everyone’s Top 20</T>
+            <T size={12} color={c.textMuted}>Highest average hearts across the app</T>
+          </View>
+          <Icon name="chevronRight" size={18} />
+        </Row>
       </Card>
 
       <ChipRow>

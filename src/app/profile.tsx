@@ -66,7 +66,12 @@ export default function Profile() {
         </View>
       </Row>
 
-      {/* Account (Subscription, Family plan, Invite) arrives with billing and the circle. */}
+      {/* Subscription and Family plan arrive with billing. */}
+      <Group title="Circle">
+        <Item first label="Invite people" sub="Share your code" onPress={() => router.push('/invite')} />
+        <Item label="Contacts" sub={s.circle.length ? `${s.circle.length} in your circle` : 'No one yet'} onPress={() => router.push('/contacts')} />
+      </Group>
+
       <Group title="Privacy">
         <Item first label="Who can see My list" sub={VIS[s.vis]} onPress={() => router.push('/privacy')} />
         <Item label="Share my 5 ♥ titles worldwide" sub="Added anonymously to Loved worldwide" right={<Toggle value={s.settings.contribute} onChange={(v) => s.setSetting('contribute', v)} />} />

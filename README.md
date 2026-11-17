@@ -30,6 +30,10 @@ The app can't break the rules below, because the database itself enforces them (
   - Only a 5 ♥ for a title that was on your watchlist counts. The database sets that flag, not the app.
   - Votes are stored as a salted hash, never your user id.
   - A title only appears once at least 3 people have loved it. The same 3-vote minimum applies to a title's "Everyone" average.
+- **Circle:**
+  - Joining needs the other person's invite code. Accepting links you both ways, and either of you can remove the other.
+  - Notifications are created by the database: when someone rates (only if you're allowed to see their list), comments, or joins. Nobody can create or edit them from the app.
+  - Everyone's Top 20 only includes titles rated by at least 3 people.
 - **Deleting an account** removes all of its data, including its anonymous worldwide votes.
 
 ## What's built
@@ -39,13 +43,21 @@ The app can't break the rules below, because the database itself enforces them (
 - **Rating sheet:** tap or drag across the hearts. The app updates straight away. If the server refuses (for example, you're out of hearts), the change is undone and a message explains why.
 - **Title detail:** your rating, your circle's real ratings and average, and the Everyone average. Comments are saved to the server.
 - **Pages:** Jar of hearts, Search & add (custom titles are saved to the server), Privacy, and Profile & settings (name, privacy, notification preferences, sign out).
+- **Circle:**
+  - **Invite:** your personal code, with Share, Copy and Make a new code, plus a "Have a code?" box.
+  - **Join a circle:** opens from `circleratings://join/CODE`. It works signed out too: the code is remembered through sign-up.
+  - **Contacts:** each person's rated count, top pick, and who can see whose list.
+  - **Friend profile:** their list, taste match, a locked state, and remove from circle.
+  - **Notifications:** with a live badge.
+  - **Everyone's Top 20.**
 
 Trending still shows labelled sample rows until the daily backend job exists.
 
 ## Not built yet
 
 1. **Billing:** the free trial, plans, Subscription, Family plan codes and the trial reminder. This needs StoreKit 2 / Play Billing, and checking the family codes against Apple's and Google's rules.
-2. **The circle:** invites, Contacts, Friend profile, notifications feed and push. The database tables for the circle already exist.
+2. **Push notifications:** these need `expo-notifications`, an EAS project and Apple/Google push credentials. In-app notifications already work.
+   - **Invite links:** links only open the app if it's installed. Universal links (https links that open the app) need a domain and an app build.
 3. **Apple and Google sign-in:** needs an Apple Developer account and a Google Cloud OAuth client.
 4. **Email before launch:**
    - Set up custom SMTP in Supabase, because the built-in sender is rate-limited and meant for testing only.
@@ -59,7 +71,13 @@ npm run typecheck
 npx expo export --platform web   # then serve dist/ to try it in a browser
 ```
 
-The sign-in → bookmark → rate → comment → privacy → sign-out flow was tested end to end against the live project.
+Tested end to end against the live project:
+
+- The single-user flow: sign in, bookmark, rate, comment, change privacy, sign out.
+- A two-person circle flow:
+  - Invite, join via link while signed out, and the live badge.
+  - Notifications, contacts and the friend profile.
+  - Locking a list, removing someone from the circle, and a bad invite code.
 
 ## Layout
 

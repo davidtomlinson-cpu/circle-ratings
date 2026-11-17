@@ -43,7 +43,7 @@ export function Toast() {
           <T size={11} weight="bold" color={color.s300} style={{ textTransform: 'uppercase', letterSpacing: 0.6 }}>{who.length ? 'Sent to your circle · now' : 'Saved · now'}</T>
           <T size={14} weight="bold" numberOfLines={1}>{me.first} gave {it.title} {t.val} ♥</T>
           <T size={12} color={c.textSoft} numberOfLines={2}>
-            {who.length ? `${joinNames(who)} get a notification` : s.circle.length ? 'Your list is private, so no one is notified' : 'Saved to My list'}
+            {who.length ? `Shared with ${joinNames(who)}` : s.circle.length ? 'Your list is private, so no one is notified' : 'Saved to My list'}
             {world ? ` · ${world}` : ''}
           </T>
         </View>
