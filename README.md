@@ -2,7 +2,7 @@
 
 A mobile app for friends and family to rate films, TV, albums and books out of 5 hearts. It's built from the "Circle Ratings" design handoff.
 
-Stack: Expo SDK 58 (React Native 0.88), Expo Router, TypeScript and zustand. State is persisted with AsyncStorage. Fonts are Caprasimo and Figtree, and icons are Lucide-style SVGs.
+Stack: Expo SDK 58 (React Native 0.88), Expo Router, TypeScript, zustand and Supabase (Postgres + Auth). Fonts are Caprasimo and Figtree, and icons are Lucide-style SVGs.
 
 ## Run it
 
@@ -13,29 +13,53 @@ npx expo start --web    # browser preview
 npm run typecheck
 ```
 
-## What's built (slice 1: core loop, local data)
+## Backend: Supabase
 
-- **Tabs:** Today, Top 50, World (Loved worldwide), Trending, Watchlist and My list. They use the custom 6-tab bar from the spec.
-- **Rating sheet:** tap or drag across the hearts. It uses the jar budget (60 a month), shows the save label ("Use N hearts · M left"), and disables the button when you're short.
-- **After a rating is saved:** the title leaves the watchlist and goes to My list, the jar goes down, and a toast tells you who gets notified.
-- **Worldwide rule:** only 5 ♥ given to a title that was on your watchlist at the time of rating count towards Loved worldwide. You can opt out in Privacy.
-- **Title detail:** You / Circle / Everyone stats, circle members' hearts, and comments.
-- **Pages:** Jar of hearts, Notifications, Search & add a title, and Privacy. Privacy controls who sees My list and who gets notified.
+- **Project:** `circle-ratings` (ref `fkyhmaorcrqzdbvktvcv`), in London (`eu-west-2`), on the free tier.
+- **App config:** the URL and publishable key are in `.env`. Both are public by design. Never add the database password or a secret key.
+- **Schema:** lives in `supabase/migrations/`, which holds the same SQL that was applied to the project.
 
-Everything runs on mock data ported from the prototype (`src/data/`). Ratings, watchlist and settings persist on the device.
+The app can't break the rules below, because the database itself enforces them (row level security plus triggers):
+
+- **Privacy:**
+  - Your watchlist is visible only to you.
+  - Your ratings are visible to you, and to your circle only when your list visibility allows it ("all", "some" with a per-person grant, or "locked").
+  - Comments are visible to the author's circle.
+- **Heart budget:** 60 hearts a month, with the month counted on UK time. Re-rating something you rated this month costs the difference. The database refuses a rating that goes over budget.
+- **Loved worldwide:**
+  - Only a 5 ♥ for a title that was on your watchlist counts. The database sets that flag, not the app.
+  - Votes are stored as a salted hash, never your user id.
+  - A title only appears once at least 3 people have loved it. The same 3-vote minimum applies to a title's "Everyone" average.
+- **Deleting an account** removes all of its data, including its anonymous worldwide votes.
+
+## What's built
+
+- **Accounts:** email sign-up, sign-in and password reset. You stay signed in between launches. App pages are locked when you're signed out.
+- **Tabs:** Today, Top 50, World, Trending, Watchlist and My list.
+- **Rating sheet:** tap or drag across the hearts. The app updates straight away. If the server refuses (for example, you're out of hearts), the change is undone and a message explains why.
+- **Title detail:** your rating, your circle's real ratings and average, and the Everyone average. Comments are saved to the server.
+- **Pages:** Jar of hearts, Search & add (custom titles are saved to the server), Privacy, and Profile & settings (name, privacy, notification preferences, sign out).
+
+Trending still shows labelled sample rows until the daily backend job exists.
 
 ## Not built yet
 
-1. **Accounts and subscriptions:** onboarding (welcome, sign-up, free trial, join with a code), Profile & settings, Subscription, Family plan codes, and the trial-ending reminder.
-2. **The circle:** Contacts, Friend profile (taste match), Invite, and Everyone's Top 20.
-3. **Backend (Supabase is the likely fit):**
-   - Auth with Apple, Google and email.
-   - Real catalogue IDs from TMDB, Open Library and MusicBrainz.
-   - Ratings, watchlists and comments, with privacy enforced server-side.
-   - The anonymous worldwide aggregate.
-   - Push notifications.
-   - A daily trending job. This replaces the prototype's on-device AI calls; the Trending tab shows sample rows until it exists.
-4. **Billing:** StoreKit 2 and Play Billing with a 7-day intro offer. Family codes become server-issued, single-use tokens.
+1. **Billing:** the free trial, plans, Subscription, Family plan codes and the trial reminder. This needs StoreKit 2 / Play Billing, and checking the family codes against Apple's and Google's rules.
+2. **The circle:** invites, Contacts, Friend profile, notifications feed and push. The database tables for the circle already exist.
+3. **Apple and Google sign-in:** needs an Apple Developer account and a Google Cloud OAuth client.
+4. **Email before launch:**
+   - Set up custom SMTP in Supabase, because the built-in sender is rate-limited and meant for testing only.
+   - Set the Site URL and redirect URLs so the confirmation and reset links open the app.
+5. **Real catalogue:** TMDB, Open Library and MusicBrainz IDs, plus the daily trending job.
+
+## Testing
+
+```bash
+npm run typecheck
+npx expo export --platform web   # then serve dist/ to try it in a browser
+```
+
+The sign-in → bookmark → rate → comment → privacy → sign-out flow was tested end to end against the live project.
 
 ## Layout
 
@@ -43,6 +67,8 @@ Everything runs on mock data ported from the prototype (`src/data/`). Ratings, w
 src/app/            routes (Expo Router). (tabs)/ = bottom tabs; other files slide in from the right
 src/components/     ui.tsx (text, buttons, chips, rows), Icon, Jar, RatingSheet, Toast, TitleRow
 src/data/           catalogue (generated from the prototype), model helpers, mock feeds
-src/state/store.ts  persisted user state + derived rules (jar budget, viewers)
+src/state/store.ts  local copy of the user's server data, optimistic writes with rollback
+src/lib/            Supabase client, worldwide hook
+supabase/migrations database schema, security rules, catalogue seed
 src/theme.ts        design tokens
 ```

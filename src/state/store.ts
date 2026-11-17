@@ -1,135 +1,290 @@
-// Local app state. Mirrors the prototype's per-user state so the UI can be built and
-// tested offline. When the backend lands, the persisted slice becomes a cache of
-// server data and the actions become API calls.
+// App state. The signed-in user's data lives in Supabase; this store is a local copy
+// that updates optimistically and rolls back if the server refuses a change.
+// The server is the authority on the rules (heart budget, worldwide eligibility, privacy).
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
-import { BUDGET, FRIENDS, monthStart, type Custom } from '../data/model';
+import { friendlyError, supabase } from '../lib/supabase';
+import { BUDGET, monthStart, type Custom } from '../data/model';
 import type { Cat } from '../data/types';
 
-type Flags = Record<string, 1 | 0 | boolean>;
 export type Visibility = 'all' | 'some' | 'locked';
+export type Member = { id: string; name: string };
+type Settings = { contribute: boolean; notify: boolean; remind: boolean };
 
-type Persisted = {
+type UserData = {
+  userId: string | null;
+  name: string;
   want: Record<string, 1 | 0>;
   my: Record<string, number>;
   rAt: Record<string, number>;
   fresh: Record<string, 1>; // rated from the watchlist → eligible for Loved worldwide
-  comments: Record<string, [string, string][]>;
   custom: Custom;
   vis: Visibility;
-  visTo: Record<string, boolean>;
-  settings: { contribute: boolean; notify: boolean; remind: boolean };
-  read: Flags;
+  grants: Record<string, boolean>; // member id → can see my list (when vis = 'some')
+  settings: Settings;
+  circle: Member[];
+  titleIds: Record<string, number>; // app key → titles.id
 };
 
 type Ui = {
+  ready: boolean; // auth state known
+  loading: boolean; // fetching the user's data
   sheet: { open: boolean; key: string; val: number };
   toast: { key: string; val: number; id: number } | null;
+  error: { msg: string; id: number } | null;
 };
 
 type Actions = {
+  setSession: (userId: string | null) => Promise<void>;
+  refresh: () => Promise<void>;
   toggleWant: (key: string, on?: boolean) => void;
   openSheet: (key: string) => void;
   setSheetVal: (val: number) => void;
   closeSheet: () => void;
   saveRating: () => void;
-  addComment: (key: string, text: string) => void;
   addCustom: (title: string, cat: Cat, by?: string, year?: string) => string;
-  markRead: (id: string) => void;
-  markAllRead: (ids: string[]) => void;
-  setSetting: (k: keyof Persisted['settings'], v: boolean) => void;
   setVis: (v: Visibility) => void;
-  setVisTo: (name: string, on: boolean) => void;
+  setGrant: (memberId: string, on: boolean) => void;
+  setSetting: (k: keyof Settings, v: boolean) => void;
+  setName: (name: string) => void;
+  showError: (msg: string) => void;
   hideToast: () => void;
-  reset: () => void;
+  hideError: () => void;
 };
 
-const DEFAULTS: Persisted = {
-  want: { 'Movies#14': 1, 'Movies#21': 1, 'Movies#32': 1, 'TV shows#4': 1, 'TV shows#24': 1, 'Books#11': 1, 'Albums#4': 1, 'Albums#8': 1 },
-  my: {
-    'Movies#0': 5, 'Movies#3': 4, 'Movies#4': 5, 'Movies#13': 4, 'Movies#20': 5,
-    'TV shows#0': 5, 'TV shows#1': 4, 'TV shows#2': 5, 'TV shows#10': 5,
-    'Books#5': 4, 'Books#10': 3, 'Albums#0': 5, 'Albums#9': 4, 'Albums#27': 3,
-  },
+const EMPTY: UserData = {
+  userId: null,
+  name: '',
+  want: {},
+  my: {},
   rAt: {},
   fresh: {},
-  comments: {},
   custom: {},
   vis: 'all',
-  visTo: {},
+  grants: {},
   settings: { contribute: true, notify: true, remind: true },
-  read: {},
+  circle: [],
+  titleIds: {},
 };
 
-export type State = Persisted & Ui & Actions;
+export type State = UserData & Ui & Actions;
 
 export const useApp = create<State>()(
   persist(
-    (set, get) => ({
-      ...DEFAULTS,
-      sheet: { open: false, key: 'Movies#0', val: 0 },
-      toast: null,
+    (set, get) => {
+      /** Run a server write; on failure restore `undo` and tell the user. */
+      async function write(run: () => PromiseLike<{ error: { message?: string; hint?: string } | null }>, undo: Partial<UserData>) {
+        const { error } = await run();
+        if (error) {
+          set(undo);
+          get().showError(friendlyError(error));
+        }
+        return !error;
+      }
+      const tid = (key: string) => get().titleIds[key];
 
-      toggleWant: (key, on) =>
-        set((s) => ({ want: { ...s.want, [key]: (on ?? !s.want[key]) ? 1 : 0 } })),
+      return {
+        ...EMPTY,
+        ready: false,
+        loading: false,
+        sheet: { open: false, key: 'Movies#0', val: 0 },
+        toast: null,
+        error: null,
 
-      openSheet: (key) => set((s) => ({ sheet: { open: true, key, val: s.my[key] ?? 0 } })),
-      setSheetVal: (val) => set((s) => (s.sheet.val === val ? s : { sheet: { ...s.sheet, val } })),
-      closeSheet: () => set((s) => ({ sheet: { ...s.sheet, open: false } })),
+        setSession: async (userId) => {
+          const prev = get().userId;
+          if (!userId) {
+            set({ ...EMPTY, ready: true, loading: false });
+            return;
+          }
+          // A different account on this device: drop the old copy first.
+          if (prev && prev !== userId) set({ ...EMPTY });
+          set({ userId, ready: true });
+          await get().refresh();
+        },
 
-      saveRating: () => {
-        const s = get();
-        const { key, val } = s.sheet;
-        if (!val || jarCost(s, key, val) > jarLeft(s)) return;
-        const want = { ...s.want };
-        const fresh = { ...s.fresh };
-        if (want[key]) fresh[key] = 1;
-        delete want[key];
-        set({
-          my: { ...s.my, [key]: val },
-          rAt: { ...s.rAt, [key]: Date.now() },
-          want,
-          fresh,
-          sheet: { ...s.sheet, open: false },
-        });
-        setTimeout(() => set({ toast: { key, val, id: Date.now() } }), 350);
-      },
+        refresh: async () => {
+          const uid = get().userId;
+          if (!uid) return;
+          set({ loading: true });
+          const [titles, profile, want, ratings, circle, grants] = await Promise.all([
+            supabase.from('titles').select('id, key, category, title, creator, year, source').or(`source.neq.custom,created_by.eq.${uid}`),
+            supabase.from('profiles').select('display_name, visibility, contribute_worldwide, notify_circle, remind_billing').eq('id', uid).single(),
+            supabase.from('watchlist').select('title_id'),
+            supabase.from('ratings').select('title_id, hearts, rated_at, from_watchlist').eq('user_id', uid),
+            supabase.from('circle_members').select('member_id').eq('owner_id', uid),
+            supabase.from('visibility_grants').select('viewer_id'),
+          ]);
+          const err = titles.error || profile.error || want.error || ratings.error || circle.error || grants.error;
+          if (err) {
+            set({ loading: false });
+            get().showError(friendlyError(err));
+            return;
+          }
+          const titleIds: Record<string, number> = {};
+          const keyOf: Record<number, string> = {};
+          const custom: Custom = {};
+          for (const t of titles.data) {
+            titleIds[t.key] = t.id;
+            keyOf[t.id] = t.key;
+            if (t.source === 'custom') custom[t.key.slice(2)] = { title: t.title, by: t.creator, year: t.year, cat: t.category as Cat };
+          }
+          const my: Record<string, number> = {};
+          const rAt: Record<string, number> = {};
+          const fresh: Record<string, 1> = {};
+          for (const r of ratings.data) {
+            const k = keyOf[r.title_id];
+            if (!k) continue;
+            my[k] = r.hearts;
+            rAt[k] = Date.parse(r.rated_at);
+            if (r.from_watchlist) fresh[k] = 1;
+          }
+          const memberIds = circle.data.map((m) => m.member_id);
+          const names = memberIds.length
+            ? (await supabase.from('profiles').select('id, display_name').in('id', memberIds)).data ?? []
+            : [];
+          const p = profile.data;
+          set({
+            loading: false,
+            titleIds,
+            custom,
+            my,
+            rAt,
+            fresh,
+            want: Object.fromEntries(want.data.filter((w) => keyOf[w.title_id]).map((w) => [keyOf[w.title_id], 1 as const])),
+            name: p.display_name,
+            vis: p.visibility as Visibility,
+            settings: { contribute: p.contribute_worldwide, notify: p.notify_circle, remind: p.remind_billing },
+            circle: names.map((n) => ({ id: n.id, name: n.display_name || 'Someone' })),
+            grants: Object.fromEntries(grants.data.map((g) => [g.viewer_id, true])),
+          });
+        },
 
-      addComment: (key, text) =>
-        set((s) => ({ comments: { ...s.comments, [key]: [...(s.comments[key] ?? []), ['You', text]] } })),
+        toggleWant: (key, on) => {
+          const s = get();
+          const next = on ?? !s.want[key];
+          const prev = s.want;
+          set({ want: { ...prev, [key]: next ? 1 : 0 } });
+          const id = tid(key);
+          if (!id) return;
+          void write(
+            () => (next
+              ? supabase.from('watchlist').upsert({ title_id: id }, { onConflict: 'user_id,title_id', ignoreDuplicates: true })
+              : supabase.from('watchlist').delete().eq('title_id', id)),
+            { want: prev },
+          );
+        },
 
-      addCustom: (title, cat, by = '', year = '') => {
-        const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
-        set((s) => ({
-          custom: { ...s.custom, [id]: { title, by, year, cat } },
-          want: { ...s.want, [`C#${id}`]: 1 },
-        }));
-        return `C#${id}`;
-      },
+        openSheet: (key) => set((s) => ({ sheet: { open: true, key, val: s.my[key] ?? 0 } })),
+        setSheetVal: (val) => set((s) => (s.sheet.val === val ? s : { sheet: { ...s.sheet, val } })),
+        closeSheet: () => set((s) => ({ sheet: { ...s.sheet, open: false } })),
 
-      markRead: (id) => set((s) => ({ read: { ...s.read, [id]: 1 } })),
-      markAllRead: (ids) => set((s) => ({ read: { ...s.read, ...Object.fromEntries(ids.map((i) => [i, 1])) } })),
-      setSetting: (k, v) => set((s) => ({ settings: { ...s.settings, [k]: v } })),
-      setVis: (vis) => set({ vis }),
-      setVisTo: (name, on) => set((s) => ({ visTo: { ...s.visTo, [name]: on } })),
-      hideToast: () => set({ toast: null }),
-      reset: () => set({ ...DEFAULTS }),
-    }),
+        saveRating: () => {
+          const s = get();
+          const { key, val } = s.sheet;
+          if (!val || jarCost(s, key, val) > jarLeft(s)) return;
+          const id = tid(key);
+          if (!id) return s.showError('This title isn’t synced yet. Try again in a moment.');
+          const undo = { my: s.my, rAt: s.rAt, want: s.want, fresh: s.fresh };
+          const want = { ...s.want };
+          const fresh = { ...s.fresh };
+          if (want[key]) fresh[key] = 1;
+          delete want[key];
+          set({ my: { ...s.my, [key]: val }, rAt: { ...s.rAt, [key]: Date.now() }, want, fresh, sheet: { ...s.sheet, open: false } });
+          void (async () => {
+            const res = await supabase
+              .from('ratings')
+              .upsert({ title_id: id, hearts: val }, { onConflict: 'user_id,title_id' })
+              .select('rated_at, from_watchlist')
+              .single();
+            if (res.error) {
+              set(undo);
+              return get().showError(friendlyError(res.error));
+            }
+            // Take the server's word on timing and worldwide eligibility.
+            set((st) => ({
+              rAt: { ...st.rAt, [key]: Date.parse(res.data.rated_at) },
+              fresh: res.data.from_watchlist ? { ...st.fresh, [key]: 1 } : st.fresh,
+              toast: { key, val, id: Date.now() },
+            }));
+          })();
+        },
+
+        addCustom: (title, cat, by = '', year = '') => {
+          const local = Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+          const key = `C#${local}`;
+          const s = get();
+          const undo = { custom: s.custom, want: s.want };
+          set({ custom: { ...s.custom, [local]: { title, by, year, cat } }, want: { ...s.want, [key]: 1 } });
+          void (async () => {
+            const ins = await supabase
+              .from('titles')
+              .insert({ key, category: cat, title, creator: by, year, source: 'custom', created_by: s.userId })
+              .select('id')
+              .single();
+            if (ins.error) {
+              set(undo);
+              return get().showError(friendlyError(ins.error));
+            }
+            set((st) => ({ titleIds: { ...st.titleIds, [key]: ins.data.id } }));
+            await write(() => supabase.from('watchlist').insert({ title_id: ins.data.id }), { want: undo.want });
+          })();
+          return key;
+        },
+
+        setVis: (vis) => {
+          const prev = get().vis;
+          set({ vis });
+          void write(() => supabase.from('profiles').update({ visibility: vis }).eq('id', get().userId!), { vis: prev });
+        },
+
+        setGrant: (memberId, on) => {
+          const prev = get().grants;
+          set({ grants: { ...prev, [memberId]: on } });
+          void write(
+            () => (on
+              ? supabase.from('visibility_grants').insert({ owner_id: get().userId!, viewer_id: memberId })
+              : supabase.from('visibility_grants').delete().eq('viewer_id', memberId)),
+            { grants: prev },
+          );
+        },
+
+        setSetting: (k, v) => {
+          const prev = get().settings;
+          set({ settings: { ...prev, [k]: v } });
+          const col = { contribute: 'contribute_worldwide', notify: 'notify_circle', remind: 'remind_billing' }[k];
+          void write(() => supabase.from('profiles').update({ [col]: v }).eq('id', get().userId!), { settings: prev });
+        },
+
+        setName: (name) => {
+          const prev = get().name;
+          set({ name });
+          void write(() => supabase.from('profiles').update({ display_name: name }).eq('id', get().userId!), { name: prev });
+        },
+
+        showError: (msg) => set({ error: { msg, id: Date.now() } }),
+        hideToast: () => set({ toast: null }),
+        hideError: () => set({ error: null }),
+      };
+    },
     {
-      name: 'circle-ratings-v1',
+      // Cached copy so the app opens instantly; refreshed from the server on launch.
+      name: 'circle-ratings-cache-v2',
       storage: createJSONStorage(() => AsyncStorage),
-      partialize: ({ sheet, toast, ...rest }) =>
-        Object.fromEntries(Object.entries(rest).filter(([, v]) => typeof v !== 'function')) as Persisted,
+      partialize: (s): UserData => ({
+        userId: s.userId, name: s.name, want: s.want, my: s.my, rAt: s.rAt, fresh: s.fresh, custom: s.custom,
+        vis: s.vis, grants: s.grants, settings: s.settings, circle: s.circle, titleIds: s.titleIds,
+      }),
     },
   ),
 );
 
 // ---- Derived values -------------------------------------------------------
 
-type JarInput = Pick<Persisted, 'my' | 'rAt'>;
+type JarInput = Pick<UserData, 'my' | 'rAt'>;
 
-/** Hearts spent this calendar month. */
+/** Hearts spent this calendar month. Mirrors the server rule in ratings_before(). */
 export function jarSpent(s: JarInput, now = new Date()) {
   const m = monthStart(now);
   return Object.keys(s.my)
@@ -144,8 +299,14 @@ export function jarCost(s: JarInput, key: string, val: number, now = new Date())
   return Math.max(0, val - old);
 }
 
-export function viewers(s: Pick<Persisted, 'vis' | 'visTo'>) {
-  return FRIENDS.map((f) => f.name).filter((n) => s.vis === 'all' || (s.vis === 'some' && s.visTo[n]));
+/** Names of circle members who can see my list and get rating notifications. */
+export function viewers(s: Pick<UserData, 'vis' | 'grants' | 'circle'>) {
+  return s.circle.filter((m) => s.vis === 'all' || (s.vis === 'some' && s.grants[m.id])).map((m) => m.name);
 }
 
-export const wantKeys = (s: Pick<Persisted, 'want'>) => Object.keys(s.want).filter((k) => s.want[k]);
+export const wantKeys = (s: Pick<UserData, 'want'>) => Object.keys(s.want).filter((k) => s.want[k]);
+
+export function useMe() {
+  const name = useApp((s) => s.name) || 'You';
+  return { name, first: name.split(' ')[0], initial: name[0]?.toUpperCase() ?? '?' };
+}

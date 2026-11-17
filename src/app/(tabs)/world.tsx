@@ -1,21 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { Animated, View } from 'react-native';
 import { AddBtn, openTitle } from '../../components/TitleRow';
-import { Card, Chip, ChipRow, Disc, H, HeartGlyph, ListRow, Page, Row, T } from '../../components/ui';
-import { ALL_TOP_KEYS, CITIES, EXTRA_KEYS, hash, item, worldCount, worldToday, WORLD_BASE_TOTAL } from '../../data/model';
+import { Btn, Card, Chip, ChipRow, Disc, H, HeartGlyph, HeartPill, ListRow, Page, Row, T } from '../../components/ui';
 import { TREND_CATS } from '../../data/feeds';
+import { item } from '../../data/model';
 import type { Cat } from '../../data/types';
+import { useWorldwide } from '../../lib/useWorldwide';
 import { useApp } from '../../state/store';
 import { c, color } from '../../theme';
-
-function useTick(ms: number) {
-  const [n, setN] = useState(0);
-  useEffect(() => {
-    const id = setInterval(() => setN((x) => x + 1), ms);
-    return () => clearInterval(id);
-  }, [ms]);
-  return n;
-}
 
 function LiveBadge() {
   const blink = useRef(new Animated.Value(1)).current;
@@ -37,23 +29,10 @@ function LiveBadge() {
 
 export default function World() {
   const s = useApp();
-  const tick = useTick(2200);
   const [cat, setCat] = useState<Cat | 'All'>('All');
   const [mode, setMode] = useState<'classics' | 'new'>('classics');
-
-  // Your own eligible 5 ♥ ratings count towards the totals.
-  const mine = (k: string) => (s.settings.contribute && s.fresh[k] && s.my[k] === 5 ? 1 : 0);
-  const customKeys = Object.keys(s.custom).map((id) => `C#${id}`);
-  const pool = mode === 'classics' ? ALL_TOP_KEYS : [...EXTRA_KEYS, ...customKeys];
-  const rows = pool
-    .filter((k) => cat === 'All' || item(k, s.custom).cat === cat)
-    .map((k) => ({ k, n: (k[0] === 'C' ? 0 : worldCount(k)) + mine(k) }))
-    .filter((r) => r.n > 0)
-    .sort((a, b) => b.n - a.n)
-    .slice(0, 30);
-
-  const total = WORLD_BASE_TOTAL + tick * 3 + Object.keys(s.fresh).reduce((a, k) => a + mine(k), 0);
-  const tickKey = ALL_TOP_KEYS[hash('tick' + tick) % ALL_TOP_KEYS.length];
+  const w = useWorldwide(cat, mode === 'classics');
+  const mine = (k: string) => s.settings.contribute && s.fresh[k] && s.my[k] === 5;
 
   return (
     <Page tabs>
@@ -66,12 +45,10 @@ export default function World() {
 
       <Card bg={color.a700} style={{ gap: 4 }}>
         <Row gap={8} style={{ alignItems: 'baseline' }}>
-          <H size={34}>{total.toLocaleString('en-GB')}</H>
+          <H size={34}>{w.total == null ? '–' : w.total.toLocaleString('en-GB')}</H>
           <T size={13} color={color.a200}>five-heart ratings so far</T>
         </Row>
-        <T size={13} color={color.a100} numberOfLines={1}>
-          Just now · someone in {CITIES[tick % CITIES.length]} gave {item(tickKey).title} 5 ♥
-        </T>
+        <T size={13} color={color.a100}>Updates live as people finish things from their watchlists.</T>
       </Card>
 
       <ChipRow>
@@ -83,25 +60,37 @@ export default function World() {
         <Chip label="New & now" on={mode === 'new'} onPress={() => setMode('new')} />
       </Row>
 
+      {w.error && (
+        <Card style={{ gap: 10 }}>
+          <T size={14}>Couldn’t load the worldwide list.</T>
+          <Btn small label="Try again" onPress={w.reload} style={{ alignSelf: 'flex-start' }} />
+        </Card>
+      )}
+      {!w.error && !w.loading && !w.rows.length && (
+        <T size={14} color={c.textMuted} center style={{ paddingVertical: 20 }}>
+          Nothing here yet. A title shows up once at least 3 people have loved it.
+        </T>
+      )}
+
       <View style={{ marginHorizontal: -6 }}>
-        {rows.map((r, i) => {
-          const it = item(r.k, s.custom);
+        {w.rows.map((r, i) => {
+          const it = item(r.key, s.custom);
           return (
             <ListRow
-              key={r.k}
-              onPress={() => openTitle(r.k)}
+              key={r.key}
+              onPress={() => openTitle(r.key)}
               disc={<Disc size={36} bg={i < 3 ? c.primary : color.n800} fg={i < 3 ? c.text : color.n100} label={String(i + 1)} />}
               title={it.title}
               sub={it.sub}
               extra={
                 <Row gap={6}>
                   <HeartGlyph size={12} />
-                  <T size={12} weight="bold" color={color.a300}>{r.n.toLocaleString('en-GB')}</T>
-                  <T size={12} color={c.textMuted}>+{worldToday(r.k)} today</T>
-                  {!!mine(r.k) && <T size={11} weight="bold" color={color.s300}>incl. you</T>}
+                  <T size={12} weight="bold" color={color.a300}>{r.total.toLocaleString('en-GB')}</T>
+                  {!!r.today && <T size={12} color={c.textMuted}>+{r.today} today</T>}
+                  {mine(r.key) && <T size={11} weight="bold" color={color.s300}>incl. you</T>}
                 </Row>
               }
-              right={s.my[r.k] ? undefined : <AddBtn k={r.k} />}
+              right={s.my[r.key] ? <HeartPill v={s.my[r.key]} onPress={() => s.openSheet(r.key)} /> : <AddBtn k={r.key} />}
             />
           );
         })}

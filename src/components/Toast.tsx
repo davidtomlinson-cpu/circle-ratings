@@ -2,14 +2,15 @@
 import { useEffect, useRef } from 'react';
 import { Animated, Easing, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ME, item, joinNames } from '../data/model';
-import { useApp, viewers } from '../state/store';
+import { item, joinNames } from '../data/model';
+import { useApp, useMe, viewers } from '../state/store';
 import { alpha, c, color } from '../theme';
 import { HeartGlyph, Row, T } from './ui';
 
 export function Toast() {
   const s = useApp();
   const t = s.toast;
+  const me = useMe();
   const insets = useSafeAreaInsets();
   const y = useRef(new Animated.Value(0)).current;
 
@@ -39,10 +40,10 @@ export function Toast() {
       <Row gap={10}>
         <View style={styles.icon}><HeartGlyph size={18} fill={c.text} /></View>
         <View style={{ flex: 1 }}>
-          <T size={11} weight="bold" color={color.s300} style={{ textTransform: 'uppercase', letterSpacing: 0.6 }}>Sent to your circle · now</T>
-          <T size={14} weight="bold" numberOfLines={1}>{ME.first} gave {it.title} {t.val} ♥</T>
+          <T size={11} weight="bold" color={color.s300} style={{ textTransform: 'uppercase', letterSpacing: 0.6 }}>{who.length ? 'Sent to your circle · now' : 'Saved · now'}</T>
+          <T size={14} weight="bold" numberOfLines={1}>{me.first} gave {it.title} {t.val} ♥</T>
           <T size={12} color={c.textSoft} numberOfLines={2}>
-            {who.length ? `${joinNames(who)} get a notification` : 'Your list is private, so no one is notified'}
+            {who.length ? `${joinNames(who)} get a notification` : s.circle.length ? 'Your list is private, so no one is notified' : 'Saved to My list'}
             {world ? ` · ${world}` : ''}
           </T>
         </View>
@@ -59,3 +60,21 @@ const styles = StyleSheet.create({
   },
   icon: { width: 38, height: 38, borderRadius: 19, backgroundColor: c.primary, alignItems: 'center', justifyContent: 'center' },
 });
+
+/** Red-ish banner for failed server writes (e.g. out of hearts, offline). */
+export function ErrorBanner() {
+  const err = useApp((s) => s.error);
+  const hide = useApp((s) => s.hideError);
+  const insets = useSafeAreaInsets();
+  useEffect(() => {
+    if (!err) return;
+    const id = setTimeout(hide, 4000);
+    return () => clearTimeout(id);
+  }, [err?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  if (!err) return null;
+  return (
+    <View accessibilityRole="alert" style={[styles.toast, { top: insets.top + 8, backgroundColor: color.a800, borderColor: color.a600 }]}>
+      <T size={14} weight="bold" color={color.a100}>{err.msg}</T>
+    </View>
+  );
+}

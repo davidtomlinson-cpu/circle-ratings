@@ -5,9 +5,9 @@ import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { Icon } from '../../components/Icon';
 import { openTitle } from '../../components/TitleRow';
 import { Card, Chip, ChipRow, Disc, H, HeartPill, ListRow, Page, ProgressBar, Row, T, tint } from '../../components/ui';
-import { KIND, ME, top50Keys, item } from '../../data/model';
+import { KIND, top50Keys, item } from '../../data/model';
 import { CATS, type Cat } from '../../data/types';
-import { useApp } from '../../state/store';
+import { useApp, useMe } from '../../state/store';
 import { c, color } from '../../theme';
 
 const RING = 240;
@@ -74,6 +74,7 @@ function TopRow({ k }: { k: string }) {
 
 export default function Top50() {
   const my = useApp((s) => s.my);
+  const me = useMe();
   const [cat, setCat] = useState<Cat>('Movies');
   const count = (x: Cat) => Object.keys(my).filter((k) => k.startsWith(x + '#')).length;
   const total = CATS.reduce((a, x) => a + count(x), 0);
@@ -99,7 +100,7 @@ export default function Top50() {
 
       <ProgressRing pct={Math.round((total / 200) * 100)} />
       <T size={14} color={c.textSoft} center style={{ paddingHorizontal: 20 }}>
-        {greeting()}, {ME.first}. You’ve seen {total} of the 200 all-time greats. {least} are your next frontier.
+        {greeting()}, {me.first}. You’ve seen {total} of the 200 all-time greats. {least} are your next frontier.
       </T>
 
       <ChipRow>

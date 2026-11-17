@@ -4,9 +4,10 @@ import { Jar } from '../../components/Jar';
 import { Icon, type IconName } from '../../components/Icon';
 import { RateBtn, TitleRow } from '../../components/TitleRow';
 import { Card, Disc, H, HeartGlyph, Page, Row, RoundIcon, SectionLabel, T, ChipRow } from '../../components/ui';
-import { NOTIFS, TRENDING } from '../../data/feeds';
-import { ALL_TOP_KEYS, BUDGET, FRIENDS, ME, fmtDay, nextMonth, worldCount } from '../../data/model';
-import { jarLeft, useApp, wantKeys } from '../../state/store';
+import { TRENDING } from '../../data/feeds';
+import { BUDGET, fmtDay, nextMonth } from '../../data/model';
+import { useWorldwide } from '../../lib/useWorldwide';
+import { jarLeft, useApp, useMe, wantKeys } from '../../state/store';
 import { c, color } from '../../theme';
 
 const VIS_LABEL = { all: 'All my contacts', some: 'Chosen contacts', locked: 'Locked' } as const;
@@ -25,23 +26,25 @@ export default function Today() {
   const want = wantKeys(s);
   const rated = Object.keys(s.my).length;
   const left = jarLeft(s);
-  const unread = NOTIFS.filter((n) => !s.read[n.id]).length;
-  const loved = [...ALL_TOP_KEYS].sort((a, b) => worldCount(b) - worldCount(a)).slice(0, 3);
+  const me = useMe();
+  const loved = useWorldwide('All', true, 3);
 
   return (
     <Page tabs>
       <Row>
         <H size={26} style={{ flex: 1 }}>Today</H>
         <RoundIcon name="search" label="Search" onPress={() => router.push('/search')} />
-        <RoundIcon name="bell" label="Notifications" badge={unread} onPress={() => router.push('/notifications')} />
-        <Disc size={34} bg={ME.bg} label={ME.initial} />
+        <RoundIcon name="bell" label="Notifications" onPress={() => router.push('/notifications')} />
+        <Pressable accessibilityLabel="Profile and settings" onPress={() => router.push('/profile')}>
+          <Disc size={34} bg={color.s400} label={me.initial} />
+        </Pressable>
       </Row>
 
       <Card style={{ gap: 14, paddingBottom: 14 }}>
         <Row>
-          <Disc size={44} bg={ME.bg} label={ME.initial} />
+          <Disc size={44} bg={color.s400} label={me.initial} />
           <View style={{ flex: 1 }}>
-            <T size={14} weight="bold">{ME.name}</T>
+            <T size={14} weight="bold">{me.name}</T>
             <T size={12} color={c.textMuted}>{want.length} on watchlist · {rated} rated · {VIS_LABEL[s.vis]}</T>
           </View>
         </Row>
@@ -49,7 +52,8 @@ export default function Today() {
           <ActionChip icon="lock" label="Privacy" href="/privacy" />
           <ActionChip icon="bookmark" label="Watchlist" href="/watchlist" />
           <ActionChip icon="heart" label="My list" href="/mylist" />
-          {/* Invite, Contacts' lists and Settings arrive with the circle/account slice. */}
+          <ActionChip icon="settings" label="Settings" href="/profile" />
+          {/* Invite and Contacts' lists arrive with the circle slice. */}
         </ChipRow>
       </Card>
 
@@ -59,18 +63,16 @@ export default function Today() {
         <T size={12} color={c.textMuted} center>Each rating uses its hearts · refills on {fmtDay(nextMonth())}</T>
       </Pressable>
 
-      <Card onPress={() => router.push('/notifications')}>
+      <Card>
         <Row>
-          <Row gap={0}>
-            {FRIENDS.map((f, i) => (
-              <View key={f.name} style={{ borderWidth: 2, borderColor: c.card, borderRadius: 14, marginLeft: i ? -8 : 0 }}>
-                <Disc size={24} bg={f.bg} label={f.name[0]} display={false} />
-              </View>
-            ))}
-          </Row>
+          <Icon name="users" size={20} color={color.s300} />
           <View style={{ flex: 1 }}>
             <SectionLabel>Your circle</SectionLabel>
-            <T size={13} numberOfLines={1}>Priya gave Parasite 5 ♥ · Dad gave Breaking Bad 5 ♥</T>
+            <T size={13} numberOfLines={2}>
+              {s.circle.length
+                ? `${s.circle.length} ${s.circle.length === 1 ? 'person' : 'people'} · ${s.circle.slice(0, 3).map((m) => m.name).join(', ')}`
+                : 'Just you for now. Inviting family and friends is coming next.'}
+            </T>
           </View>
         </Row>
       </Card>
@@ -91,9 +93,10 @@ export default function Today() {
 
       <Card onPress={() => router.push('/world')} style={{ gap: 8 }}>
         <Row><Icon name="globe" size={18} /><T size={14} weight="bold" style={{ flex: 1 }}>Loved worldwide · live</T><Icon name="chevronRight" size={18} /></Row>
-        {loved.map((k) => (
-          <TitleRow key={k} k={k} action={<Row gap={4}><HeartGlyph size={13} /><T size={13} weight="bold" color={color.a300}>{worldCount(k).toLocaleString('en-GB')}</T></Row>} />
+        {loved.rows.map((r) => (
+          <TitleRow key={r.key} k={r.key} action={<Row gap={4}><HeartGlyph size={13} /><T size={13} weight="bold" color={color.a300}>{r.total.toLocaleString('en-GB')}</T></Row>} />
         ))}
+        {!loved.loading && !loved.rows.length && <T size={13} color={c.textMuted}>Titles appear once 3 people have loved them.</T>}
       </Card>
     </Page>
   );

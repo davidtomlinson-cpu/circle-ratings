@@ -1,18 +1,6 @@
-// Mock feeds. In production these come from the backend:
-// - notifications: push/in-app notification table
-// - trending: a daily scheduled job (TMDB trending, music charts, bestseller lists),
+// Sample trending feed. In production this comes from a daily scheduled job (TMDB trending, music charts, bestseller lists),
 //   NOT client-side LLM calls as in the prototype.
 import type { Cat } from './types';
-
-export type Notif = { id: string; who: string; text: string; quote?: string; when: string; href: string };
-
-export const NOTIFS: Notif[] = [
-  { id: 'n1', who: 'Priya', text: 'Priya gave Parasite 5 ♥', when: '8m', href: '/title/Movies%2321' },
-  { id: 'n2', who: 'Jo', text: 'Jo commented on Breaking Bad', quote: 'Season five is about as good as television gets.', when: '1h', href: '/title/TV%20shows%232' },
-  { id: 'n3', who: 'Sam', text: 'Sam gave Kind of Blue 5 ♥', when: '3h', href: '/title/Albums%238' },
-  { id: 'n5', who: 'Tom', text: 'Tom joined your circle', when: '3d', href: '/' },
-  { id: 'n6', who: 'Mum', text: 'Mum gave The Godfather 4 ♥', when: '4d', href: '/title/Movies%230' },
-];
 
 export type TrendCat = 'Films' | 'TV series' | 'Albums' | 'Books';
 export const TREND_CATS: { label: TrendCat; cat: Cat }[] = [

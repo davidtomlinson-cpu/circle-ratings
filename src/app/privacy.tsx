@@ -1,6 +1,5 @@
 import { Pressable, Switch, View } from 'react-native';
 import { BackHeader, Disc, H, Page, Row, T } from '../components/ui';
-import { FRIENDS } from '../data/model';
 import { useApp, type Visibility } from '../state/store';
 import { c, color } from '../theme';
 
@@ -44,19 +43,20 @@ export default function Privacy() {
 
       {s.vis === 'some' && (
         <View style={{ backgroundColor: color.n800, borderRadius: 24, paddingHorizontal: 16 }}>
-          {FRIENDS.map((f, i) => (
-            <Row key={f.name} style={{ paddingVertical: 12, borderTopWidth: i ? 1 : 0, borderTopColor: color.n700 }}>
-              <Disc size={30} bg={f.bg} label={f.name[0]} display={false} />
-              <T size={14} weight="bold" style={{ flex: 1 }}>{f.name}</T>
+          {s.circle.map((m, i) => (
+            <Row key={m.id} style={{ paddingVertical: 12, borderTopWidth: i ? 1 : 0, borderTopColor: color.n700 }}>
+              <Disc size={30} bg={color.a300} label={m.name[0]} display={false} />
+              <T size={14} weight="bold" style={{ flex: 1 }}>{m.name}</T>
               <Switch
-                value={!!s.visTo[f.name]}
-                onValueChange={(v) => s.setVisTo(f.name, v)}
+                value={!!s.grants[m.id]}
+                onValueChange={(v) => s.setGrant(m.id, v)}
                 trackColor={{ false: color.n600, true: color.s500 }}
                 thumbColor={color.n100}
                 {...({ activeThumbColor: color.n100 } as object)}
               />
             </Row>
           ))}
+          {!s.circle.length && <T size={13} color={c.textMuted} style={{ paddingVertical: 14 }}>No one in your circle yet. Once people join, you can pick who sees your list here.</T>}
         </View>
       )}
 

@@ -1,0 +1,85 @@
+import { router } from 'expo-router';
+import { useState, type ReactNode } from 'react';
+import { Pressable, Switch, View } from 'react-native';
+import { Field } from '../components/Field';
+import { Icon } from '../components/Icon';
+import { BackHeader, Disc, H, Page, Row, T } from '../components/ui';
+import { supabase } from '../lib/supabase';
+import { useApp, useMe, wantKeys } from '../state/store';
+import { c, color } from '../theme';
+
+const VIS = { all: 'All my contacts', some: 'Only people I choose', locked: 'Locked · only you' } as const;
+
+function Group({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <View style={{ gap: 8 }}>
+      <T size={12} weight="bold" color={c.textMuted} style={{ textTransform: 'uppercase', letterSpacing: 0.6, paddingLeft: 4 }}>{title}</T>
+      <View style={{ backgroundColor: color.n800, borderRadius: 24, paddingHorizontal: 16 }}>{children}</View>
+    </View>
+  );
+}
+
+function Item({ label, sub, right, onPress, first }: { label: string; sub?: string; right?: ReactNode; onPress?: () => void; first?: boolean }) {
+  return (
+    <Pressable onPress={onPress} disabled={!onPress} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 13, borderTopWidth: first ? 0 : 1, borderTopColor: color.n700 }}>
+      <View style={{ flex: 1 }}>
+        <T size={14} weight="bold">{label}</T>
+        {!!sub && <T size={12} color={c.textMuted}>{sub}</T>}
+      </View>
+      {right ?? (onPress ? <Icon name="chevronRight" size={18} color={color.n400} /> : null)}
+    </Pressable>
+  );
+}
+
+function Toggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <Switch value={value} onValueChange={onChange} trackColor={{ false: color.n600, true: color.s500 }} thumbColor={color.n100} {...({ activeThumbColor: color.n100 } as object)} />
+  );
+}
+
+export default function Profile() {
+  const s = useApp();
+  const me = useMe();
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState(s.name);
+
+  const saveName = () => {
+    const n = name.trim();
+    if (n && n !== s.name) s.setName(n);
+    setEditing(false);
+  };
+
+  return (
+    <Page>
+      <BackHeader title="Profile" />
+      <Row gap={16}>
+        <Disc size={64} bg={color.s400} label={me.initial} />
+        <View style={{ flex: 1, gap: 4 }}>
+          {editing ? (
+            <Field value={name} onChangeText={setName} onSubmitEditing={saveName} onBlur={saveName} autoFocus maxLength={60} style={{ height: 44 }} />
+          ) : (
+            <Pressable onPress={() => { setName(s.name); setEditing(true); }} accessibilityHint="Edit your name">
+              <H size={26}>{me.name}</H>
+            </Pressable>
+          )}
+          <T size={13} color={c.textMuted}>{wantKeys(s).length} on watchlist · {Object.keys(s.my).length} rated</T>
+        </View>
+      </Row>
+
+      {/* Account (Subscription, Family plan, Invite) arrives with billing and the circle. */}
+      <Group title="Privacy">
+        <Item first label="Who can see My list" sub={VIS[s.vis]} onPress={() => router.push('/privacy')} />
+        <Item label="Share my 5 ♥ titles worldwide" sub="Added anonymously to Loved worldwide" right={<Toggle value={s.settings.contribute} onChange={(v) => s.setSetting('contribute', v)} />} />
+      </Group>
+
+      <Group title="Notifications">
+        <Item first label="Circle activity" sub="When someone rates something you have" right={<Toggle value={s.settings.notify} onChange={(v) => s.setSetting('notify', v)} />} />
+        <Item label="Trial and billing reminders" right={<Toggle value={s.settings.remind} onChange={(v) => s.setSetting('remind', v)} />} />
+      </Group>
+
+      <Pressable onPress={() => supabase.auth.signOut()} style={{ alignItems: 'center', paddingVertical: 8 }}>
+        <T size={15} weight="bold" color={color.a400}>Sign out</T>
+      </Pressable>
+    </Page>
+  );
+}
