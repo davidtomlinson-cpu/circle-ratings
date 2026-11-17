@@ -34,11 +34,11 @@ The app can't break the rules below, because the database itself enforces them (
   - Joining needs the other person's invite code. Accepting links you both ways, and either of you can remove the other.
   - Notifications are created by the database: when someone rates (only if you're allowed to see their list), comments, or joins. Nobody can create or edit them from the app.
   - Everyone's Top 20 only includes titles rated by at least 3 people.
-- **Deleting an account** removes all of its data, including its anonymous worldwide votes.
+- **Deleting an account** (Profile → Delete account, via `delete_my_account()`) happens immediately. It removes all of the account's data: ratings, watchlist, comments, circle links in both directions, invite code, notifications, titles you added, and anonymous worldwide votes.
 
 ## What's built
 
-- **Accounts:** email sign-up, sign-in and password reset. You stay signed in between launches. App pages are locked when you're signed out.
+- **Accounts:** email sign-up, sign-in, password reset and in-app account deletion. You stay signed in between launches. App pages are locked when you're signed out.
 - **Tabs:** Today, Top 50, World, Trending, Watchlist and My list.
 - **Rating sheet:** tap or drag across the hearts. The app updates straight away. If the server refuses (for example, you're out of hearts), the change is undone and a message explains why.
 - **Title detail:** your rating, your circle's real ratings and average, and the Everyone average. Comments are saved to the server.

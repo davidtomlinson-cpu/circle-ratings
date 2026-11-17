@@ -86,6 +86,7 @@ export default function RootLayout() {
             <Stack.Screen name="contacts" />
             <Stack.Screen name="friend/[id]" />
             <Stack.Screen name="top20" />
+            <Stack.Screen name="delete-account" />
           </Stack.Protected>
           <Stack.Protected guard={!signedIn} redirectTo="/">
             <Stack.Screen name="welcome" />

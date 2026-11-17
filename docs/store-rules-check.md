@@ -17,7 +17,7 @@ The real risk is on iPhone. An Apple reviewer could read a typed code that unloc
 
 Apple has also announced its own version of this, called Group Purchases. When it's available, we should move the iPhone side onto it.
 
-Separately, there are four things the app needs before any store submission, whatever we decide about family codes. The biggest is in-app account deletion, which we don't have yet. The full list is below.
+Separately, there are a few things the app needs before any store submission, whatever we decide about family codes. The biggest, in-app account deletion, is now done. The full list is below.
 
 ## What the rules say
 
@@ -31,7 +31,7 @@ Separately, there are four things the app needs before any store submission, wha
 | 3.1.3(b): access across platforms is allowed "provided those items are also available as in-app purchases within the app" | An Android member can use an iPhone owner's plan, and the other way round, as long as every plan is also on sale in each app. | Low. |
 | 3.1.2(a): subscriptions "must work on all of the user's devices" | This works already, because access is tied to the account. | Low. |
 | 3.1.2(c) and Schedule 2: before purchase, "clearly describe what the user will get for the price" | The trial and paywall screens must show the price, renewal period, what's included, and links to the terms and privacy policy. | Low. |
-| 5.1.1(v): "If your app supports account creation, you must also offer account deletion within the app" | **We don't have this yet.** This is a guaranteed rejection until it's built. | **Certain until built.** |
+| 5.1.1(v): "If your app supports account creation, you must also offer account deletion within the app" | Built: Profile → Delete account, which deletes immediately. | Resolved. |
 | 4.8: a Google login requires an equivalent privacy-focused option | Shipping "Continue with Google" means also shipping Sign in with Apple. The design already has both. | Low. |
 
 **Apple's own options for sharing a plan:**
@@ -79,7 +79,7 @@ Separately, there are four things the app needs before any store submission, wha
 
 ## Must-fix before any store submission
 
-- In-app account deletion (Apple 5.1.1(v)).
+- ~~In-app account deletion (Apple 5.1.1(v)).~~ **Done 18 Nov 2026.** When billing ships, the delete screen must also say that deleting the account doesn't cancel a store subscription, and link to the store's subscription settings.
 - Sign in with Apple, if we ship Google sign-in (Apple 4.8).
 - Paywall and trial disclosures: price, renewal period, what's included, terms and privacy links (Apple 3.1.2(c), Google subscriptions policy).
 - "Restore purchases" plus a manage/cancel subscription link in Settings, on both stores.

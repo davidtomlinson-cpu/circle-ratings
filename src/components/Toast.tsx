@@ -61,7 +61,7 @@ const styles = StyleSheet.create({
   icon: { width: 38, height: 38, borderRadius: 19, backgroundColor: c.primary, alignItems: 'center', justifyContent: 'center' },
 });
 
-/** Red-ish banner for failed server writes (e.g. out of hearts, offline). */
+/** Banner for failed server writes (e.g. out of hearts, offline), or a neutral notice when `info` is set. */
 export function ErrorBanner() {
   const err = useApp((s) => s.error);
   const hide = useApp((s) => s.hideError);
@@ -73,8 +73,8 @@ export function ErrorBanner() {
   }, [err?.id]); // eslint-disable-line react-hooks/exhaustive-deps
   if (!err) return null;
   return (
-    <View accessibilityRole="alert" style={[styles.toast, { top: insets.top + 8, backgroundColor: color.a800, borderColor: color.a600 }]}>
-      <T size={14} weight="bold" color={color.a100}>{err.msg}</T>
+    <View accessibilityRole="alert" style={[styles.toast, { top: insets.top + 8, backgroundColor: err.info ? color.s800 : color.a800, borderColor: err.info ? color.s600 : color.a600 }]}>
+      <T size={14} weight="bold" color={err.info ? color.s100 : color.a100}>{err.msg}</T>
     </View>
   );
 }

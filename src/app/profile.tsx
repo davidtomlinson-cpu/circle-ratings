@@ -85,6 +85,9 @@ export default function Profile() {
       <Pressable onPress={() => supabase.auth.signOut()} style={{ alignItems: 'center', paddingVertical: 8 }}>
         <T size={15} weight="bold" color={color.a400}>Sign out</T>
       </Pressable>
+      <Pressable onPress={() => router.push('/delete-account')} style={{ alignItems: 'center', paddingVertical: 4 }}>
+        <T size={13} weight="bold" color={c.textMuted}>Delete account</T>
+      </Pressable>
     </Page>
   );
 }

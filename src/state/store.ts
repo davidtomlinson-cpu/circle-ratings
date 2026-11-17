@@ -39,7 +39,7 @@ type Ui = {
   loading: boolean; // fetching the user's data
   sheet: { open: boolean; key: string; val: number };
   toast: { key: string; val: number; id: number } | null;
-  error: { msg: string; id: number } | null;
+  error: { msg: string; id: number; info?: boolean } | null;
   unread: number;
 };
 
@@ -60,6 +60,7 @@ type Actions = {
   setSetting: (k: keyof Settings, v: boolean) => void;
   setName: (name: string) => void;
   showError: (msg: string) => void;
+  showNotice: (msg: string) => void;
   hideToast: () => void;
   hideError: () => void;
 };
@@ -302,6 +303,7 @@ export const useApp = create<State>()(
         },
 
         showError: (msg) => set({ error: { msg, id: Date.now() } }),
+        showNotice: (msg) => set({ error: { msg, id: Date.now(), info: true } }),
         hideToast: () => set({ toast: null }),
         hideError: () => set({ error: null }),
       };
