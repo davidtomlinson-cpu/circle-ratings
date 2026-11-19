@@ -22,9 +22,9 @@ Every product gets a **7-day free trial** for new subscribers. The server works 
 1. **Agreements, Tax and Banking.** Accept the Paid Apps agreement and add bank and tax details. Subscriptions don't work in testing until this is done.
 2. **Small Business Program.** Enrol at developer.apple.com/app-store/small-business-program. This cuts Apple's fee to 15% from the first year instead of 30%.
 3. **Identifiers.** Certificates, IDs & Profiles → Identifiers → add App ID `com.davala.circleratings`. In-App Purchase is on by default.
-4. **Create the app record.** Apps → + → New App: name "Circle Ratings" (or your choice), bundle ID as above, SKU `circleratings`.
+4. **Create the app record.** Apps → + → New App: name "SofaList", bundle ID as above, SKU `circleratings`.
 5. **Create the subscriptions.**
-   - Go to Monetization → Subscriptions and create one subscription group called "Circle Ratings".
+   - Go to Monetization → Subscriptions and create one subscription group called "SofaList".
    - Add the six products from the table, with their prices.
    - Rank them in the group from Extended down to Individual, so upgrades and downgrades work.
    - Do **not** turn on Family Sharing. It can't be turned off once enabled, and we run family plans ourselves.
@@ -35,7 +35,7 @@ Every product gets a **7-day free trial** for new subscribers. The server works 
 ## 2. Google: Play Console (about 45 minutes)
 
 1. **Payments profile.** Set up a merchant account under Settings → Payments profile.
-2. **Create the app.** Create app "Circle Ratings", package `com.davala.circleratings`.
+2. **Create the app.** Create app "SofaList", package `com.davala.circleratings`.
 3. **Upload a first build.** Play won't let you create subscriptions until a build with billing is uploaded to a testing track. Upload the first EAS build (step 5) to **Internal testing**, then come back here.
 4. **Create the subscriptions.**
    - Go to Monetize → Subscriptions and create `cr_individual`, `cr_family` and `cr_extended`.
@@ -49,7 +49,7 @@ Every product gets a **7-day free trial** for new subscribers. The server works 
 
 ## 3. RevenueCat (about 20 minutes)
 
-1. **Create a project** called "Circle Ratings".
+1. **Create a project** called "SofaList".
 2. **Add the iOS app.** Bundle ID as above; upload the `.p8` In-App Purchase key with its Key ID and Issuer ID.
 3. **Add the Android app.** Package as above; upload the service account JSON.
 4. **Create the entitlement.** Its identifier must be exactly **`access`**. Attach all six App Store products and all six Google base plans to it.
@@ -70,7 +70,7 @@ Every product gets a **7-day free trial** for new subscribers. The server works 
 **Also recommended:**
 - **Leaked password protection:** turn it on under Authentication → Passwords. It blocks passwords known from data breaches. Supabase's security check flagged it.
 - **Email sending:** set up custom SMTP before real users sign up. The built-in sender is for testing only.
-- **Email links:** set Authentication → URL Configuration → Site URL and redirect URLs (`circleratings://`), so confirmation and reset links open the app.
+- **Email links:** set Authentication → URL Configuration → Site URL and redirect URLs (`sofalist://`), so confirmation and reset links open the app.
 
 ## 5. Expo: test build on your phone
 

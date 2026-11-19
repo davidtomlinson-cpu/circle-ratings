@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Circle Ratings",
-    "slug": "circle-ratings",
+    "name": "SofaList",
+    "slug": "sofalist",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -12,7 +12,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#0c0f2b",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -25,12 +25,20 @@
       "bundler": "metro",
       "output": "single"
     },
-    "scheme": "circleratings",
+    "scheme": "sofalist",
     "backgroundColor": "#2e2b25",
     "plugins": [
       "expo-router",
       "expo-font",
-      "expo-sqlite"
+      "expo-sqlite",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 220,
+          "backgroundColor": "#2e2b25"
+        }
+      ]
     ]
   }
 }

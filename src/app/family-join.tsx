@@ -1,5 +1,5 @@
 // Join someone's Family / Extended family plan. Opened from an invitation link
-// (circleratings://family-join?code=HEART-XXXX-XXXX) or by typing the code. Works signed out:
+// (sofalist://family-join?code=HEART-XXXX-XXXX) or by typing the code. Works signed out:
 // the code is remembered through sign-up and offered again afterwards.
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';

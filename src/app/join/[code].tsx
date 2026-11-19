@@ -1,4 +1,4 @@
-// Opened from an invite link (circleratings://join/CODE) or the "Have a code?" box.
+// Opened from an invite link (sofalist://join/CODE) or the "Have a code?" box.
 // Works signed out too: the code is remembered and offered again after sign-in.
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
