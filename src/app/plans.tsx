@@ -103,7 +103,7 @@ export default function Plans() {
       <T size={12} color={c.textMuted} center>
         {plan
           ? trial
-            ? `No charge today. Then ${plan.priceString} a ${per} from ${fmtDay(addDays(7))}, renewing automatically until you cancel. Cancel anytime in ${storeName()} settings.`
+            ? `No charge today. Cancel before ${fmtDay(addDays(7))} and you won’t pay. After that it’s ${plan.priceString} a ${per}, renewing automatically until you cancel in ${storeName()} settings.`
             : `${plan.priceString} a ${per}, renewing automatically until you cancel. Cancel anytime in ${storeName()} settings.`
           : ''}
       </T>
