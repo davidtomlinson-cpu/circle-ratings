@@ -68,21 +68,20 @@ export default function Plans() {
       </View>
 
       {trial && (
-        <View style={{ gap: 12 }}>
+        // Compact three-step timeline, side by side, so the start button fits on screen.
+        <Row gap={8} style={{ alignItems: 'flex-start' }}>
           {[
-            { n: '1', bg: color.a400, title: 'Today', sub: 'Full access: Top 50, Trending, Loved worldwide, your circle' },
-            { n: '5', bg: color.s400, title: `Day 5 · ${fmtDay(addDays(5))}`, sub: 'We’ll remind you before your trial ends' },
-            { n: '7', bg: color.n400, title: `Day 7 · ${fmtDay(addDays(7))}`, sub: 'Your plan starts. Cancel before then and you won’t pay' },
+            { n: '1', bg: color.a400, title: 'Today', sub: 'Full access' },
+            { n: '5', bg: color.s400, title: `Day 5 · ${fmtDay(addDays(5))}`, sub: 'We’ll remind you' },
+            { n: '7', bg: color.n400, title: `Day 7 · ${fmtDay(addDays(7))}`, sub: 'Plan starts' },
           ].map((x) => (
-            <Row key={x.n} style={{ alignItems: 'flex-start' }}>
-              <Disc size={30} bg={x.bg} fg={c.ink} label={x.n} display={false} />
-              <View style={{ flex: 1 }}>
-                <T size={14} weight="bold">{x.title}</T>
-                <T size={12} color={c.textSoft}>{x.sub}</T>
-              </View>
-            </Row>
+            <View key={x.n} style={{ flex: 1, alignItems: 'center', gap: 4 }}>
+              <Disc size={26} bg={x.bg} fg={c.ink} label={x.n} display={false} />
+              <T size={12} weight="bold" center>{x.title}</T>
+              <T size={11} color={c.textSoft} center>{x.sub}</T>
+            </View>
           ))}
-        </View>
+        </Row>
       )}
 
       <PeriodSwitch value={period} onChange={setPeriod} />
