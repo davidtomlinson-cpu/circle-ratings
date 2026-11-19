@@ -2,6 +2,7 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Linking, Platform, Pressable, View } from 'react-native';
+import { Logo } from '../components/Logo';
 import { PeriodSwitch, PlanCards } from '../components/PlanPicker';
 import { Btn, Card, Disc, H, Page, Row, T } from '../components/ui';
 import { fmtDay } from '../data/model';
@@ -60,7 +61,8 @@ export default function Plans() {
 
   return (
     <Page>
-      <View style={{ paddingTop: 8 }}>
+      <Logo mark={56} text={26} />
+      <View>
         <H size={32}>{trial ? 'Try everything free for 7 days' : 'Choose your plan'}</H>
         <T size={13} color={c.textMuted}>{trial ? 'Step 2 of 2' : 'Your ratings and lists are kept safe'}</T>
       </View>

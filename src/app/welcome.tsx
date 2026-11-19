@@ -1,11 +1,9 @@
 import { router } from 'expo-router';
-import { Image, Pressable, Text, useWindowDimensions, View } from 'react-native';
+import { Pressable, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Logo } from '../components/Logo';
 import { Btn, H, T } from '../components/ui';
-import { c, color } from '../theme';
-
-// The glowing sofa mark on a transparent background (the same image the splash screen uses).
-const LOGO = require('../../assets/splash-icon.png');
+import { c } from '../theme';
 
 export default function Welcome() {
   const insets = useSafeAreaInsets();
@@ -15,12 +13,8 @@ export default function Welcome() {
   const logo = Math.min(210, Math.round(height * 0.24));
   return (
     <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24, paddingHorizontal: 28, justifyContent: 'space-between' }}>
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 4, paddingBottom: 16 }} accessible accessibilityRole="header" accessibilityLabel="SofaList">
-        <Image source={LOGO} style={{ width: logo, height: logo }} resizeMode="contain" />
-        <H size={short ? 40 : 46}>
-          <Text style={{ color: color.s400 }}>Sofa</Text>
-          <Text style={{ color: color.a400 }}>List</Text>
-        </H>
+      <View style={{ flex: 1, justifyContent: 'center', paddingBottom: 16 }}>
+        <Logo stacked mark={logo} text={short ? 40 : 46} />
       </View>
       <View style={{ gap: short ? 14 : 18 }}>
         <H size={short ? 32 : 40}>{'Rate it.\nShare it.\nFind your next love.'}</H>

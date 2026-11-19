@@ -109,7 +109,7 @@ Tested end to end against the live project:
 
 ```
 src/app/            routes (Expo Router). (tabs)/ = bottom tabs; other files slide in from the right
-src/components/     ui.tsx (text, buttons, chips, rows), Icon, Jar, RatingSheet, Toast, TitleRow
+src/components/     ui.tsx (text, buttons, chips, rows), Icon, Logo, Jar, RatingSheet, Toast, TitleRow
 src/data/           catalogue (generated from the prototype), model helpers, mock feeds
 src/state/store.ts  local copy of the user's server data, optimistic writes with rollback
 src/lib/            Supabase client, billing (RevenueCat), invites, worldwide hook
