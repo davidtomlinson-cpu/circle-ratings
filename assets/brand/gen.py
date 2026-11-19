@@ -23,12 +23,27 @@ def svg(bg=True, scale=1.0, glow=True, mono=False, size=1024, sw=2.2):
 <path id="h" d="M0 2.6C-2.4 1-3.6-.4-3.6-1.7-3.6-2.8-2.8-3.6-1.8-3.6-1-3.6-.4-3.2 0-2.5.4-3.2 1-3.6 1.8-3.6 2.8-3.6 3.6-2.8 3.6-1.7 3.6-.4 2.4 1 0 2.6z"/></defs>
 {f'<rect width="100" height="100" fill="{BG}"/>' if bg else ''}
 <g transform="{t}"><g {f} fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="{sw}">{mark(mono)}</g></g></svg>'''
+# Small version: for sizes where the full drawing turns to mush (favicon, Android monochrome/themed icon,
+# notification icon). Just the sofa and one heart, with thick lines and no glow.
+def small(bg=True, mono=False, scale=1.0, size=96, rounded=False):
+    c=lambda x: '#ffffff' if mono else x
+    t=f'translate(50 50) scale({scale}) translate(-50 -50)'
+    r=' rx="22"' if rounded else ''
+    return f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="{size}" height="{size}">
+{f'<rect width="100" height="100"{r} fill="{BG}"/>' if bg else ''}
+<g transform="{t}">
+<path fill="{c(H)}" d="M50 38C38 31 32 25 32 18.5 32 13.5 36 10 40.5 10 44.5 10 47.8 12.2 50 15.6 52.2 12.2 55.5 10 59.5 10 64 10 68 13.5 68 18.5 68 25 62 31 50 38z"/>
+<g fill="none" stroke="{c(P)}" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">
+<path d="M25 66V51Q25 45 31 45H69Q75 45 75 51V66"/>
+<path d="M25 64Q25 56 18.5 56Q12 56 12 62.5V77H88V62.5Q88 56 81.5 56Q75 56 75 64M25 66H75"/>
+<path d="M19 77V85M81 77V85"/></g></g></svg>'''
 out={
+ 'small.svg': small(),
  'icon.svg': svg(size=1024),
  'fg.svg': svg(bg=False, scale=0.6, size=512),
  'bg.svg': f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="512" height="512"><rect width="100" height="100" fill="{BG}"/></svg>',
- 'mono.svg': svg(bg=False, scale=0.6, glow=False, mono=True, size=432),
+ 'mono.svg': small(bg=False, mono=True, scale=0.62, size=432),
  'splash.svg': svg(bg=False, size=1024),
- 'favicon.svg': svg(size=48, sw=3.2, glow=False),
+ 'favicon.svg': small(size=48, rounded=True),
 }
 for k,v in out.items(): open(k,'w').write(v)

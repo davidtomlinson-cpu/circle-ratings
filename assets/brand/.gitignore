@@ -1,3 +1,4 @@
 out/
 *.svg
 !icon.svg
+!small.svg

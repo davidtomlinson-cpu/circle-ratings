@@ -8,6 +8,8 @@ Stack: Expo SDK 58 (React Native 0.88), Expo Router, TypeScript, zustand and Sup
 
 The name is **SofaList**. The logo is a glowing line drawing of a sofa with a ticked list and five hearts, in the app's own colours (sage, cream and apricot on the dark brown background). `assets/brand/icon.svg` is the master and `assets/brand/sofalist-logo.png` is the logo with the name. To change the icon, edit `gen.py`, then run `python3 gen.py && node render.js` in `assets/brand/` and copy `out/*.png` into `assets/`. That covers iPhone, Android adaptive and monochrome, splash and favicon.
 
+There's also a small version (`assets/brand/small.svg`, just the sofa and one heart) for sizes where the full drawing turns to mush. It's used for the favicon and the Android monochrome icon, and it's the one to use for the notification icon when push notifications are added.
+
 The app ID stays `com.davala.circleratings`. Nobody sees it, and changing it after a store listing exists is painful.
 
 ## Run it
