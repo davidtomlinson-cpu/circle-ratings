@@ -1,5 +1,7 @@
 import sys
-P='#c792f5'; Y='#f6c64e'; T='#5fe3c9'; H='#f4907f'; BG='#0c0f2b'
+import os
+# Colours are the app's own tokens: s400 sage, n200 cream, a400 apricot (x2), n900 background.
+P,Y,T,H,BG=os.environ.get('PAL','#aebf92,#eee7db,#f6a06b,#f6a06b,#2e2b25').split(',')
 def mark(mono=False):
     c=lambda x: '#ffffff' if mono else x
     hearts=''.join(f'<use href="#h" x="{x}" y="17"/>' for x in (28,38.5,49,59.5,70))
