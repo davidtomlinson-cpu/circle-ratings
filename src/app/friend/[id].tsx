@@ -11,11 +11,11 @@ import { friendlyError, supabase } from '../../lib/supabase';
 import { useApp } from '../../state/store';
 import { c, color } from '../../theme';
 
-type Row = { key: string; hearts: number };
+type RatingRow = { key: string; hearts: number };
 type TitleRef = { key: string; category: Cat; title: string; creator: string; year: string; source: string };
 
 /** 100% = identical ratings on everything you both rated; each heart of difference costs 20 points. */
-function tasteMatch(mine: Record<string, number>, theirs: Row[]) {
+function tasteMatch(mine: Record<string, number>, theirs: RatingRow[]) {
   const diffs = theirs.filter((r) => mine[r.key]).map((r) => Math.abs(r.hearts - mine[r.key]));
   if (diffs.length < 3) return { pct: null, overlap: diffs.length };
   const pct = Math.round(100 - (diffs.reduce((a, b) => a + b, 0) / diffs.length) * 20);
@@ -26,7 +26,7 @@ export default function Friend() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const s = useApp();
   const m = s.circle.find((x) => x.id === id);
-  const [rows, setRows] = useState<Row[] | null>(null);
+  const [rows, setRows] = useState<RatingRow[] | null>(null);
   const [custom, setCustom] = useState<Custom>({});
   const [cat, setCat] = useState<Cat | 'All'>('All');
   const [confirm, setConfirm] = useState(false);
@@ -42,7 +42,7 @@ export default function Friend() {
       .then(({ data, error }) => {
         if (error) return s.showError(friendlyError(error));
         const cu: Custom = {};
-        const out: Row[] = [];
+        const out: RatingRow[] = [];
         for (const r of data ?? []) {
           const t = (Array.isArray(r.titles) ? r.titles[0] : r.titles) as TitleRef | null;
           if (!t) continue;

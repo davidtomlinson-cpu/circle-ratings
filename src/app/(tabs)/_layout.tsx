@@ -1,4 +1,4 @@
-import Tabs, { type BottomTabBarProps } from 'expo-router/tabs';
+import { Tabs, type BottomTabBarProps } from 'expo-router/tabs';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon, type IconName } from '../../components/Icon';

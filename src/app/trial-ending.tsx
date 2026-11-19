@@ -16,8 +16,9 @@ export default function TrialEnding() {
   const [plans, setPlans] = useState<Plan[]>([]);
   useEffect(() => { loadPlans().then(setPlans).catch(() => {}); }, []);
 
+  const [now] = useState(() => Date.now());
   const end = a?.expires_at ? new Date(a.expires_at) : null;
-  const days = end ? Math.max(0, Math.ceil((end.getTime() - Date.now()) / 86400000)) : 0;
+  const days = end ? Math.max(0, Math.ceil((end.getTime() - now) / 86400000)) : 0;
   const price = plans.find((p) => p.tier === a?.tier && p.period === a?.period)?.priceString;
   const name = TIERS.find((t) => t.tier === a?.tier)?.name ?? '';
 

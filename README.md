@@ -19,6 +19,7 @@ npm install
 npx expo start          # then press i / a, or scan with Expo Go
 npx expo start --web    # browser preview
 npm run typecheck
+npm run lint
 npm run test:billing             # RevenueCat → subscription mapping
 ```
 
@@ -91,6 +92,7 @@ Trending still shows labelled sample rows until the daily backend job exists.
 
 ```bash
 npm run typecheck
+npm run lint
 npm run test:billing             # RevenueCat → subscription mapping
 npx expo export --platform web   # then serve dist/ to try it in a browser
 ```

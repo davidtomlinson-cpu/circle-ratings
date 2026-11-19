@@ -23,19 +23,20 @@ export default function FamilyJoin() {
   const refreshAccess = useApp((s) => s.refreshAccess);
   const [entry, setEntry] = useState(String(params.code ?? ''));
   const code = normaliseFamilyCode(entry);
-  const [preview, setPreview] = useState<Preview | null | undefined>(undefined);
+  const [loaded, setLoaded] = useState<{ code: string; preview: Preview | null } | null>(null);
+  // undefined = still loading (or no code yet); resets by itself when the code changes.
+  const preview = code && loaded?.code === code ? loaded.preview : undefined;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [joined, setJoined] = useState<{ owner: string; ownSub: boolean } | null>(null);
 
   useEffect(() => {
-    setPreview(undefined);
     if (!code) return;
     if (!signedIn) {
       void savePendingInvite(code);
       return;
     }
-    void supabase.rpc('family_invite_preview', { p_code: code }).then(({ data }) => setPreview((data as Preview[] | null)?.[0] ?? null));
+    void supabase.rpc('family_invite_preview', { p_code: code }).then(({ data }) => setLoaded({ code, preview: (data as Preview[] | null)?.[0] ?? null }));
   }, [code, signedIn]);
 
   const join = async () => {

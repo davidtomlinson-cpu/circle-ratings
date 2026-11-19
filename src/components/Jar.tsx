@@ -1,5 +1,5 @@
 // Jar of hearts: one token per heart left this month.
-import { useEffect, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { Animated, Easing, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { BUDGET, hash } from '../data/model';
@@ -15,7 +15,7 @@ function Token({ i }: { i: number }) {
   const row = Math.floor(i / 7);
   const col = i % 7;
   const h = hash('j' + i);
-  const drop = useRef(new Animated.Value(0)).current;
+  const [drop] = useState(() => new Animated.Value(0));
   useEffect(() => {
     Animated.timing(drop, {
       toValue: 1, duration: 800, delay: (i % 7) * 30,

@@ -1,5 +1,5 @@
 // "Sent to your circle" toast that drops in from the top after a rating is saved.
-import { useEffect, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { Animated, Easing, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { item, joinNames } from '../data/model';
@@ -12,7 +12,7 @@ export function Toast() {
   const t = s.toast;
   const me = useMe();
   const insets = useSafeAreaInsets();
-  const y = useRef(new Animated.Value(0)).current;
+  const [y] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
     if (!t) return;

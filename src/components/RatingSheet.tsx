@@ -15,12 +15,14 @@ export function RatingSheet() {
   const s = useApp();
   const { open, key, val } = s.sheet;
   const insets = useSafeAreaInsets();
-  const anim = useRef(new Animated.Value(0)).current;
+  const [anim] = useState(() => new Animated.Value(0));
   const [mounted, setMounted] = useState(open);
   const width = useRef(1);
 
+  // Mount as soon as it opens (set during render, as React recommends); unmount after the close animation.
+  if (open && !mounted) setMounted(true);
+
   useEffect(() => {
-    if (open) setMounted(true);
     Animated.timing(anim, { toValue: open ? 1 : 0, duration: 450, easing: EASE, useNativeDriver: true }).start(({ finished }) => {
       if (finished && !open) setMounted(false);
     });

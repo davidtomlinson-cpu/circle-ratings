@@ -35,8 +35,9 @@ export default function TitleDetail() {
   const [draft, setDraft] = useState('');
   const [posting, setPosting] = useState(false);
 
+  // Fetches only; the effect below applies the result, so state is set in a callback (and ignored if stale).
   const load = useCallback(async () => {
-    if (!id || !s.userId) return;
+    if (!id || !s.userId) return null;
     const names = Object.fromEntries(s.circle.map((m) => [m.id, m.name]));
     const [rs, ev, cs] = await Promise.all([
       // RLS only returns ratings this user is allowed to see.
@@ -44,12 +45,23 @@ export default function TitleDetail() {
       supabase.rpc('title_everyone', { p_title_id: id }).single(),
       supabase.from('comments').select('id, author_id, body').eq('title_id', id).order('created_at'),
     ]);
-    if (rs.data) setCircle(rs.data.map((r) => ({ id: r.user_id, name: names[r.user_id] ?? 'Someone', hearts: r.hearts })).sort((a, b) => b.hearts - a.hearts));
-    if (ev.data) setEveryone((ev.data as { avg_hearts: number | null }).avg_hearts);
-    if (cs.data) setComments(cs.data.map((x) => ({ id: x.id, author: x.author_id === s.userId ? 'You' : names[x.author_id] ?? 'Someone', mine: x.author_id === s.userId, body: x.body })));
+    return {
+      circle: rs.data?.map((r) => ({ id: r.user_id, name: names[r.user_id] ?? 'Someone', hearts: r.hearts })).sort((a, b) => b.hearts - a.hearts),
+      everyone: ev.data ? (ev.data as { avg_hearts: number | null }).avg_hearts : undefined,
+      comments: cs.data?.map((x) => ({ id: x.id, author: x.author_id === s.userId ? 'You' : names[x.author_id] ?? 'Someone', mine: x.author_id === s.userId, body: x.body })),
+    };
   }, [id, s.userId, s.circle]);
 
-  useEffect(() => { void load(); }, [load, mine]);
+  useEffect(() => {
+    let live = true;
+    void load().then((r) => {
+      if (!live || !r) return;
+      if (r.circle) setCircle(r.circle);
+      if (r.everyone !== undefined) setEveryone(r.everyone);
+      if (r.comments) setComments(r.comments);
+    });
+    return () => { live = false; };
+  }, [load, mine]);
 
   const circleAvg = circle.length ? circle.reduce((a, r) => a + r.hearts, 0) / circle.length : 0;
 

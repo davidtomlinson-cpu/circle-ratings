@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Icon } from '../../components/Icon';
 import { Animated, View } from 'react-native';
 import { AddBtn, openTitle } from '../../components/TitleRow';
@@ -12,7 +12,7 @@ import { useApp } from '../../state/store';
 import { c, color } from '../../theme';
 
 function LiveBadge() {
-  const blink = useRef(new Animated.Value(1)).current;
+  const [blink] = useState(() => new Animated.Value(1));
   useEffect(() => {
     const loop = Animated.loop(Animated.sequence([
       Animated.timing(blink, { toValue: 0.2, duration: 700, useNativeDriver: true }),

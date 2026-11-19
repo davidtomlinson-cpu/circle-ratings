@@ -1,9 +1,8 @@
 import { useState } from 'react';
 import { TextInput, View } from 'react-native';
 import { Icon } from '../components/Icon';
-import { AddBtn, openTitle } from '../components/TitleRow';
+import { AddBtn, openTitle, TitleRow } from '../components/TitleRow';
 import { BackHeader, Btn, Chip, ChipRow, Page, Row, SectionLabel, T } from '../components/ui';
-import { TitleRow } from '../components/TitleRow';
 import { ALL_TOP_KEYS, EXTRA_KEYS, item } from '../data/model';
 import { CATS, type Cat } from '../data/types';
 import { useApp } from '../state/store';

@@ -18,18 +18,20 @@ export default function Join() {
   const code = normaliseCode(String(raw ?? ''));
   const signedIn = useApp((s) => !!s.userId);
   const refreshCircle = useApp((s) => s.refreshCircle);
-  const [preview, setPreview] = useState<Preview | null | undefined>(undefined);
+  const [loaded, setLoaded] = useState<{ code: string; preview: Preview | null } | null>(null);
+  // undefined = still loading, null = not a valid code.
+  const preview = !code ? null : loaded?.code === code ? loaded.preview : undefined;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [joined, setJoined] = useState('');
 
   useEffect(() => {
-    if (!code) return setPreview(null);
+    if (!code) return;
     if (!signedIn) {
       void savePendingInvite(code);
       return;
     }
-    void supabase.rpc('invite_preview', { p_code: code }).then(({ data }) => setPreview((data as Preview[] | null)?.[0] ?? null));
+    void supabase.rpc('invite_preview', { p_code: code }).then(({ data }) => setLoaded({ code, preview: (data as Preview[] | null)?.[0] ?? null }));
   }, [code, signedIn]);
 
   const accept = async () => {
