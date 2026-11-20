@@ -109,6 +109,7 @@ Tested end to end against the live project:
   - Invite, join via link while signed out, and the live badge.
   - Notifications, contacts and the friend profile.
   - Locking a list, removing someone from the circle, and a bad invite code.
+- The catalogue: searching films, TV, books and albums; no duplicates for Top 50 titles; adding to a watchlist; rating; lists after a reload; deep links; and the Trending empty state.
 
 ## Layout
 
