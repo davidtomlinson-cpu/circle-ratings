@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import type { ReactNode } from 'react';
 import { item } from '../data/model';
-import { useApp } from '../state/store';
+import { useApp, useTitles } from '../state/store';
 import { c, color } from '../theme';
 import { Btn, Disc, HeartPill, ListRow } from './ui';
 
@@ -12,15 +12,16 @@ export const openTitle = (key: string) => router.push(titleHref(key) as never);
  * A title in a list. Shows the user's rating pill once rated, otherwise `action`
  * (defaults to a Rate button).
  */
-export function TitleRow({ k, sub, extra, action, disc, bg }: { k: string; sub?: string; extra?: ReactNode; action?: ReactNode; disc?: ReactNode; bg?: string }) {
+export function TitleRow({ k, sub, extra, action, disc, bg, onPress }: { k: string; sub?: string; extra?: ReactNode; action?: ReactNode; disc?: ReactNode; bg?: string; onPress?: () => void }) {
   const custom = useApp((s) => s.custom);
   const v = useApp((s) => s.my[k] ?? 0);
   const openSheet = useApp((s) => s.openSheet);
+  useTitles([k]);
   const it = item(k, custom);
   return (
     <ListRow
       bg={bg}
-      onPress={() => openTitle(k)}
+      onPress={onPress ?? (() => openTitle(k))}
       disc={disc ?? <Disc bg={it.coverBg} fg={it.coverFg} label={it.initial} />}
       title={it.title}
       sub={sub ?? it.sub}

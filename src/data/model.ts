@@ -22,10 +22,20 @@ export function hash(s: string) {
   return h >>> 0;
 }
 
+/** Keys whose details ship with the app (Top 50 and the extra list). */
+export const isStaticKey = (key: string) => /^(Movies|TV shows|Books|Albums|E)#\d+$/.test(key);
+
+/**
+ * Title details for a key. Top 50 / extra titles ship with the app; custom titles ('C#…') and catalogue
+ * titles ('wd:Q…' Wikidata, 'mb:…' MusicBrainz) come from the server via the `custom` map.
+ */
 export function item(key: string, custom: Custom = {}): Item {
   const [pre, i] = key.split('#');
   let title: string, by: string, year: string, cat: Cat, rank = 0;
-  if (pre === 'E') {
+  if (key.includes(':')) {
+    const e = custom[key] ?? { title: 'Loading…', by: '', year: '', cat: 'Movies' as Cat };
+    ({ title, by, year, cat } = e);
+  } else if (pre === 'E') {
     const e = CATALOGUE.extra[+i];
     ({ title, by, year } = e);
     cat = e.cat as Cat;

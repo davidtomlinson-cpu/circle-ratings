@@ -6,13 +6,14 @@ import { BackHeader, Chip, ChipRow, Disc, H, ListRow, Page, T } from '../compone
 import { item } from '../data/model';
 import { CATS, type Cat } from '../data/types';
 import { supabase } from '../lib/supabase';
-import { useApp } from '../state/store';
+import { useApp, useTitles } from '../state/store';
 import { c, color } from '../theme';
 
 type Top = { key: string; avg_hearts: number; ratings: number };
 
 export default function Top20() {
   const my = useApp((s) => s.my);
+  const custom = useApp((s) => s.custom);
   const [cat, setCat] = useState<Cat | 'All'>('All');
   const [rows, setRows] = useState<Top[] | null>(null);
 
@@ -22,6 +23,8 @@ export default function Top20() {
     setRows((data as Top[]) ?? []);
   }, [cat]);
   useFocusEffect(useCallback(() => { void load(); }, [load]));
+
+  useTitles((rows ?? []).map((r) => r.key));
 
   return (
     <Page>
@@ -35,7 +38,7 @@ export default function Top20() {
       </ChipRow>
       <View style={{ marginHorizontal: -6 }}>
         {(rows ?? []).map((r, i) => {
-          const it = item(r.key);
+          const it = item(r.key, custom);
           return (
             <ListRow
               key={r.key}

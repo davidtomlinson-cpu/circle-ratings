@@ -6,12 +6,13 @@ import { BackHeader, Disc, Page, T, tint } from '../components/ui';
 import { ago } from '../data/model';
 import { notifText, type Notif } from '../lib/notifications';
 import { supabase } from '../lib/supabase';
-import { useApp } from '../state/store';
+import { useApp, useTitles } from '../state/store';
 import { c, color } from '../theme';
 
 export default function Notifications() {
   const s = useApp();
   const [list, setList] = useState<Notif[] | null>(null);
+  useTitles((list ?? []).map((n) => n.title_key));
 
   const load = useCallback(async () => {
     const { data } = await supabase.rpc('my_notifications', { p_limit: 100 });

@@ -4,12 +4,14 @@ import { Pressable, View } from 'react-native';
 import { Icon } from '../components/Icon';
 import { BackHeader, Btn, Disc, H, Page, T } from '../components/ui';
 import { item } from '../data/model';
-import { useApp } from '../state/store';
+import { useApp, useTitles } from '../state/store';
 import { c, color } from '../theme';
 
 export default function Contacts() {
   const circle = useApp((s) => s.circle);
   const refreshCircle = useApp((s) => s.refreshCircle);
+  const custom = useApp((s) => s.custom);
+  useTitles(circle.map((m) => m.topKey));
   useFocusEffect(useCallback(() => { void refreshCircle(); }, [refreshCircle]));
 
   return (
@@ -22,7 +24,7 @@ export default function Contacts() {
 
       <View style={{ gap: 10 }}>
         {circle.map((m) => {
-          const top = m.topKey ? item(m.topKey).title : null;
+          const top = m.topKey ? item(m.topKey, custom).title : null;
           const detail = !m.iSee ? 'List locked' : `${m.rated ?? 0} rated${top ? ` · top pick ${top}` : ''}`;
           return (
             <Pressable

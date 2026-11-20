@@ -4,7 +4,7 @@ import { TextInput, View } from 'react-native';
 import { BackHeader, Btn, Card, Disc, H, HeartGlyph, Hearts, Page, Row, T } from '../../components/ui';
 import { item } from '../../data/model';
 import { friendlyError, supabase } from '../../lib/supabase';
-import { useApp, useMe } from '../../state/store';
+import { useApp, useMe, useTitles } from '../../state/store';
 import { c, color } from '../../theme';
 
 type CircleRating = { id: string; name: string; hearts: number };
@@ -25,6 +25,7 @@ export default function TitleDetail() {
   const s = useApp();
   const me = useMe();
   const id = s.titleIds[key];
+  useTitles([key]);
   const it = item(key, s.custom);
   const mine = s.my[key] ?? 0;
   const onWant = !!s.want[key];

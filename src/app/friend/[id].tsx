@@ -47,6 +47,7 @@ export default function Friend() {
           const t = (Array.isArray(r.titles) ? r.titles[0] : r.titles) as TitleRef | null;
           if (!t) continue;
           if (t.source === 'custom') cu[t.key.slice(2)] = { title: t.title, by: t.creator, year: t.year, cat: t.category };
+          else if (t.key.includes(':')) cu[t.key] = { title: t.title, by: t.creator, year: t.year, cat: t.category };
           out.push({ key: t.key, hearts: r.hearts });
         }
         setCustom(cu);

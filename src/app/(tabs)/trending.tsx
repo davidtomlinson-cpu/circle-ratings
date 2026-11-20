@@ -4,16 +4,18 @@ import { View } from 'react-native';
 import { Icon } from '../../components/Icon';
 import { AddBtn, openTitle } from '../../components/TitleRow';
 import { Card, Chip, ChipRow, Disc, H, HeartPill, ListRow, Page, Row, T } from '../../components/ui';
-import { TREND_CATS, TRENDING, type TrendCat } from '../../data/feeds';
+import { TREND_CATS, type TrendCat } from '../../data/feeds';
 import { item } from '../../data/model';
+import { movement, useTrending } from '../../lib/useTrending';
 import { useApp } from '../../state/store';
 import { c, color } from '../../theme';
 
 export default function Trending() {
   const my = useApp((s) => s.my);
+  const custom = useApp((s) => s.custom);
   const openSheet = useApp((s) => s.openSheet);
   const [cat, setCat] = useState<TrendCat>('Films');
-  const rows = TRENDING[cat];
+  const t = useTrending(TREND_CATS.find((x) => x.label === cat)!.cat);
 
   return (
     <Page tabs>
@@ -29,19 +31,26 @@ export default function Trending() {
       </Card>
 
       <View>
-        <H size={26}>Trending today</H>
-        {/* The live list comes from a daily backend job. Until that exists we show sample rows and say so. */}
-        <T size={12} color={c.textMuted}>Sample data · the daily feed arrives with the backend</T>
+        <H size={26}>Trending this week</H>
+        <T size={12} color={c.textMuted}>What the most people on SofaList rated or added in the last 7 days</T>
       </View>
 
       <ChipRow>
-        {TREND_CATS.map((t) => <Chip key={t.label} label={t.label} on={cat === t.label} onPress={() => setCat(t.label)} />)}
+        {TREND_CATS.map((x) => <Chip key={x.label} label={x.label} on={cat === x.label} onPress={() => setCat(x.label)} />)}
       </ChipRow>
 
+      {t.error && <T size={14} color={c.textMuted} center>Couldn’t load trending. Check your connection.</T>}
+      {!t.error && !t.loading && !t.rows.length && (
+        <T size={14} color={c.textMuted} center style={{ paddingVertical: 20 }}>
+          Nothing trending yet. A title shows up here once at least 3 people rate it or add it in a week.
+        </T>
+      )}
+
       <View style={{ marginHorizontal: -6 }}>
-        {rows.map((r, i) => {
-          const it = item(r.key);
+        {t.rows.map((r, i) => {
+          const it = item(r.key, custom);
           const v = my[r.key];
+          const move = movement(r);
           return (
             <ListRow
               key={r.key}
@@ -51,8 +60,8 @@ export default function Trending() {
               sub={[it.by, it.year].filter(Boolean).join(' · ')}
               extra={
                 <Row gap={8}>
-                  <T size={12} color={color.s300} numberOfLines={1} style={{ flexShrink: 1 }}>{r.why}</T>
-                  <T size={11} weight="bold" color={r.move === 'NEW' ? color.a300 : r.move.startsWith('▲') ? color.s300 : color.n400}>{r.move}</T>
+                  <T size={12} color={color.s300}>{r.people} people this week</T>
+                  <T size={11} weight="bold" color={move === 'NEW' ? color.a300 : move.startsWith('▲') ? color.s300 : color.n400}>{move}</T>
                 </Row>
               }
               right={v ? <HeartPill v={v} onPress={() => openSheet(r.key)} /> : <AddBtn k={r.key} />}

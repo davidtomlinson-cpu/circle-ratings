@@ -5,12 +5,12 @@ import { Jar } from '../../components/Jar';
 import { Icon, type IconName } from '../../components/Icon';
 import { RateBtn, TitleRow } from '../../components/TitleRow';
 import { Card, Disc, H, HeartGlyph, Page, Row, RoundIcon, SectionLabel, T, ChipRow } from '../../components/ui';
-import { TRENDING } from '../../data/feeds';
 import { BUDGET, fmtDay, nextMonth } from '../../data/model';
 import { notifText, type Notif } from '../../lib/notifications';
 import { supabase } from '../../lib/supabase';
+import { useTrending } from '../../lib/useTrending';
 import { useWorldwide } from '../../lib/useWorldwide';
-import { jarLeft, useApp, useMe, wantKeys } from '../../state/store';
+import { jarLeft, useApp, useMe, useTitles, wantKeys } from '../../state/store';
 import { c, color } from '../../theme';
 
 const VIS_LABEL = { all: 'All my contacts', some: 'Chosen contacts', locked: 'Locked' } as const;
@@ -31,7 +31,9 @@ export default function Today() {
   const left = jarLeft(s);
   const me = useMe();
   const loved = useWorldwide('All', true, 3);
+  const trending = useTrending('All', 3);
   const [latest, setLatest] = useState<Notif | null>(null);
+  useTitles([latest?.title_key, ...s.circle.map((m) => m.topKey)]);
   useFocusEffect(
     useCallback(() => {
       void supabase.rpc('my_notifications', { p_limit: 1 }).then(({ data }) => setLatest((data as Notif[] | null)?.[0] ?? null));
@@ -103,8 +105,9 @@ export default function Today() {
       </Card>
 
       <Card bg={color.a700} onPress={() => router.push('/trending')} style={{ gap: 8 }}>
-        <Row><Icon name="sparkles" size={18} /><T size={14} weight="bold" style={{ flex: 1 }}>Trending today · Films</T><Icon name="chevronRight" size={18} /></Row>
-        {TRENDING.Films.slice(0, 3).map((r, i) => <TitleRow key={r.key} k={r.key} disc={<Disc size={32} bg={c.primary} fg={c.text} label={String(i + 1)} />} sub={r.why} action={<View />} />)}
+        <Row><Icon name="sparkles" size={18} /><T size={14} weight="bold" style={{ flex: 1 }}>Trending this week</T><Icon name="chevronRight" size={18} /></Row>
+        {trending.rows.slice(0, 3).map((r, i) => <TitleRow key={r.key} k={r.key} disc={<Disc size={32} bg={c.primary} fg={c.text} label={String(i + 1)} />} sub={`${r.people} people this week`} action={<View />} />)}
+        {!trending.loading && !trending.rows.length && <T size={13} color={color.a100}>What people on SofaList are rating and adding. Titles appear once 3 people have.</T>}
       </Card>
 
       <Card onPress={() => router.push('/world')} style={{ gap: 8 }}>

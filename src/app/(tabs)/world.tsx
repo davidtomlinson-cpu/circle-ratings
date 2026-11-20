@@ -8,7 +8,7 @@ import { TREND_CATS } from '../../data/feeds';
 import { item } from '../../data/model';
 import type { Cat } from '../../data/types';
 import { useWorldwide } from '../../lib/useWorldwide';
-import { useApp } from '../../state/store';
+import { useApp, useTitles } from '../../state/store';
 import { c, color } from '../../theme';
 
 function LiveBadge() {
@@ -34,6 +34,7 @@ export default function World() {
   const [cat, setCat] = useState<Cat | 'All'>('All');
   const [mode, setMode] = useState<'classics' | 'new'>('classics');
   const w = useWorldwide(cat, mode === 'classics');
+  useTitles(w.rows.map((r) => r.key));
   const mine = (k: string) => s.settings.contribute && s.fresh[k] && s.my[k] === 5;
 
   return (

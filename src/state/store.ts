@@ -2,14 +2,30 @@
 // that updates optimistically and rolls back if the server refuses a change.
 // The server is the authority on the rules (heart budget, worldwide eligibility, privacy).
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useEffect } from 'react';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { identify } from '../lib/billing';
 import { friendlyError, supabase } from '../lib/supabase';
-import { BUDGET, monthStart, type Custom } from '../data/model';
+import { BUDGET, isStaticKey, monthStart, type Custom } from '../data/model';
 import type { Cat } from '../data/types';
 
 export type Visibility = 'all' | 'some' | 'locked';
+/** A row of the `titles` table, as the server sends it. */
+export type TitleRow = { id?: number; key: string; category: string; title: string; creator: string; year: string; source: string };
+const TITLE_COLS = 'id, key, category, title, creator, year, source';
+
+/** Where a title's details live in the local `custom` map: custom titles by their short id, catalogue titles by full key. */
+const customSlot = (key: string) => (key.startsWith('C#') ? key.slice(2) : key.includes(':') ? key : null);
+function remember(custom: Custom, titleIds: Record<string, number>, t: TitleRow) {
+  if (t.id) titleIds[t.key] = t.id;
+  const slot = customSlot(t.key);
+  if (slot) custom[slot] = { title: t.title, by: t.creator, year: t.year, cat: t.category as Cat };
+}
+/** True when we can show this title without asking the server. */
+const pendingKeys = new Set<string>();
+let pendingFlush: Promise<void> | null = null;
+const known = (s: Pick<UserData, 'custom'>, key: string) => isStaticKey(key) || (customSlot(key) !== null && !!s.custom[customSlot(key)!]);
 export type Access = {
   has_access: boolean;
   source: 'own' | 'family' | 'none';
@@ -65,6 +81,12 @@ type Actions = {
   refreshUnread: () => Promise<void>;
   refreshAccess: () => Promise<void>;
   removeMember: (id: string) => Promise<boolean>;
+  /** Remember title details that arrived from the server (search, trending, other people's lists). */
+  learnTitles: (rows: TitleRow[]) => void;
+  /** Fetch details for any of these keys we don't know yet. */
+  ensureTitles: (keys: string[]) => Promise<void>;
+  /** Make sure a catalogue search result is saved on the server; returns the key to use (or null on failure). */
+  catalogueAdd: (key: string) => Promise<string | null>;
   toggleWant: (key: string, on?: boolean) => void;
   openSheet: (key: string) => void;
   setSheetVal: (val: number) => void;
@@ -145,10 +167,11 @@ export const useApp = create<State>()(
           if (!uid) return;
           set({ loading: true });
           const [titles, profile, want, ratings, circle, grants] = await Promise.all([
-            supabase.from('titles').select('id, key, category, title, creator, year, source').or(`source.neq.custom,created_by.eq.${uid}`),
+            // The fixed Top 50 / extra list and my own custom titles; catalogue titles come with my ratings and watchlist below.
+            supabase.from('titles').select(TITLE_COLS).or(`source.in.(top50,extra),created_by.eq.${uid}`),
             supabase.from('profiles').select('display_name, visibility, contribute_worldwide, notify_circle, remind_billing').eq('id', uid).single(),
-            supabase.from('watchlist').select('title_id'),
-            supabase.from('ratings').select('title_id, hearts, rated_at, from_watchlist').eq('user_id', uid),
+            supabase.from('watchlist').select(`title_id, titles(${TITLE_COLS})`),
+            supabase.from('ratings').select(`title_id, hearts, rated_at, from_watchlist, titles(${TITLE_COLS})`).eq('user_id', uid),
             supabase.rpc('circle_overview'),
             supabase.from('visibility_grants').select('viewer_id'),
           ]);
@@ -161,10 +184,11 @@ export const useApp = create<State>()(
           const titleIds: Record<string, number> = {};
           const keyOf: Record<number, string> = {};
           const custom: Custom = {};
-          for (const t of titles.data) {
-            titleIds[t.key] = t.id;
+          const embedded = [...want.data, ...ratings.data].map((r) => (Array.isArray(r.titles) ? r.titles[0] : r.titles) as TitleRow | null);
+          for (const t of [...(titles.data as TitleRow[]), ...embedded]) {
+            if (!t?.id) continue;
             keyOf[t.id] = t.key;
-            if (t.source === 'custom') custom[t.key.slice(2)] = { title: t.title, by: t.creator, year: t.year, cat: t.category as Cat };
+            remember(custom, titleIds, t);
           }
           const my: Record<string, number> = {};
           const rAt: Record<string, number> = {};
@@ -228,6 +252,47 @@ export const useApp = create<State>()(
             return false;
           }
           return true;
+        },
+
+        learnTitles: (rows) => {
+          if (!rows.length) return;
+          set((s) => {
+            const custom = { ...s.custom };
+            const titleIds = { ...s.titleIds };
+            for (const t of rows) remember(custom, titleIds, t);
+            return { custom, titleIds };
+          });
+        },
+
+        ensureTitles: (keys) => {
+          // Collect keys from every screen/row that asks within a few milliseconds, then make one query.
+          const s = get();
+          for (const k of keys) if (k && !known(s, k)) pendingKeys.add(k);
+          if (!pendingKeys.size) return Promise.resolve();
+          pendingFlush ??= new Promise<void>((resolve) => setTimeout(async () => {
+            const batch = [...pendingKeys].slice(0, 200);
+            pendingKeys.clear();
+            pendingFlush = null;
+            const { data } = await supabase.from('titles').select(TITLE_COLS).in('key', batch);
+            if (data) get().learnTitles(data as TitleRow[]);
+            resolve();
+          }, 30));
+          return pendingFlush;
+        },
+
+        catalogueAdd: async (key) => {
+          if (!key.includes(':') || get().titleIds[key]) return key;
+          const { data, error } = await supabase.functions.invoke('catalogue', { body: { action: 'add', key } });
+          const t = (data as { title?: TitleRow } | null)?.title;
+          if (error || !t) {
+            const status = (error as { context?: { status?: number } } | null)?.context?.status;
+            get().showError(status === 503
+              ? 'The film and book database is busy right now. Try again in a minute.'
+              : 'Couldn’t add that title. Check your connection and try again.');
+            return null;
+          }
+          get().learnTitles([t]);
+          return t.key;
         },
 
         toggleWant: (key, on) => {
@@ -383,6 +448,15 @@ export function viewers(s: Pick<UserData, 'vis' | 'grants' | 'circle'>) {
 }
 
 export const wantKeys = (s: Pick<UserData, 'want'>) => Object.keys(s.want).filter((k) => s.want[k]);
+
+/** Fetch details for titles that came from somewhere else (other people, server lists) and aren't known yet. */
+export function useTitles(keys: (string | null | undefined)[]) {
+  const ensure = useApp((s) => s.ensureTitles);
+  const sig = keys.filter(Boolean).join('|');
+  useEffect(() => {
+    if (sig) void ensure(sig.split('|'));
+  }, [sig, ensure]);
+}
 
 export function useMe() {
   const name = useApp((s) => s.name) || 'You';
