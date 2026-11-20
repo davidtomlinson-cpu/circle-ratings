@@ -46,11 +46,16 @@ async function fetchJson(url: string, headers: Record<string, string> = {}, trie
 
 // ---- Wikidata ---------------------------------------------------------------
 
-const wd = (params: Record<string, string>) =>
-  fetchJson(
+async function wd(params: Record<string, string>) {
+  const r = (await fetchJson(
     'https://www.wikidata.org/w/api.php?' + new URLSearchParams({ ...params, format: 'json', formatversion: '2' }),
     WM_TOKEN ? { Authorization: `Bearer ${WM_TOKEN}` } : {},
-  );
+  )) as { error?: { code?: string } };
+  // Wikidata sometimes refuses inside a normal 200 answer (rate limited, server lag). Treat that as busy,
+  // never as "no results", or we'd cache an empty answer for a week.
+  if (r.error) throw new Busy(`wikidata: ${r.error.code ?? 'error'}`);
+  return r;
+}
 
 async function wdEntities(ids: string[], props: string): Promise<Record<string, WdEntity>> {
   if (!ids.length) return {};
@@ -95,7 +100,8 @@ async function cached(db: Db, source: Source, q: string, run: () => Promise<Foun
   const hit = await db.from('catalogue_cache').select('results').eq('source', source).eq('query', nq).gte('fetched_at', since).maybeSingle();
   if (hit.data) return hit.data.results as Found[];
   const rows = await run();
-  await db.from('catalogue_cache').upsert({ source, query: nq, results: rows, fetched_at: new Date().toISOString() });
+  // Only cache real answers: an empty one may just mean the source was having a bad moment.
+  if (rows.length) await db.from('catalogue_cache').upsert({ source, query: nq, results: rows, fetched_at: new Date().toISOString() });
   return rows;
 }
 

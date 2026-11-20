@@ -26,6 +26,11 @@ t('TV series uses creator and start year; duplicate creators collapse', () => {
   assert.deepEqual([f.category, f.creator, f.year], ['TV shows', 'Vince Gilligan', '2008']);
 });
 
+t('anime films count as films', () => {
+  const e: WdEntity = { id: 'Q155653', labels: { en: { value: 'Spirited Away' } }, claims: { P31: [claim('Q20650540')] } };
+  assert.equal(fromWikidata(e, {})!.category, 'Movies');
+});
+
 t('book uses author', () => {
   const b: WdEntity = { id: 'Q190192', labels: { en: { value: 'Dune' } }, claims: { P31: [claim('Q7725634')], P50: [claim('Q7934')], P577: [date('+1965-08-01T00:00:00Z')] } };
   assert.equal(fromWikidata(b, { Q7934: 'Frank Herbert' })!.category, 'Books');

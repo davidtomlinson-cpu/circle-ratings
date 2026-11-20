@@ -24,6 +24,7 @@ export const WD_TYPES: Record<Exclude<Category, 'Albums'>, ReadonlySet<string>> 
     'Q11424', // film
     'Q24869', // feature film
     'Q202866', // animated film
+    'Q20650540', // anime film
     'Q29168811', // animated feature film
     'Q506240', // television film
     'Q93204', // documentary film
