@@ -407,10 +407,16 @@ export const useApp = create<State>()(
       // Cached copy so the app opens instantly; refreshed from the server on launch.
       name: 'circle-ratings-cache-v4',
       storage: createJSONStorage(() => AsyncStorage),
-      partialize: (s): UserData => ({
-        userId: s.userId, name: s.name, want: s.want, my: s.my, rAt: s.rAt, fresh: s.fresh, custom: s.custom,
-        vis: s.vis, grants: s.grants, settings: s.settings, circle: s.circle, titleIds: s.titleIds, access: s.access,
-      }),
+      partialize: (s): UserData => {
+        // Keep only catalogue titles this user has rated or saved; search results are fetched again when needed.
+        const keep = (k: string) => !k.includes(':') || k in s.my || k in s.want;
+        const custom = Object.fromEntries(Object.entries(s.custom).filter(([k]) => keep(k)));
+        const titleIds = Object.fromEntries(Object.entries(s.titleIds).filter(([k]) => keep(k)));
+        return {
+          userId: s.userId, name: s.name, want: s.want, my: s.my, rAt: s.rAt, fresh: s.fresh, custom,
+          vis: s.vis, grants: s.grants, settings: s.settings, circle: s.circle, titleIds, access: s.access,
+        };
+      },
     },
   ),
 );

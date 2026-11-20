@@ -41,7 +41,8 @@
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
     "test:billing": "node --experimental-strip-types --no-warnings supabase/functions/_shared/test/revenuecat.test.ts",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "test:catalogue": "node --experimental-strip-types --no-warnings supabase/functions/_shared/test/catalogue.test.ts"
   },
   "private": true
 }

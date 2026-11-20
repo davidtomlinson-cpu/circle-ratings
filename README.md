@@ -21,6 +21,7 @@ npx expo start --web    # browser preview
 npm run typecheck
 npm run lint
 npm run test:billing             # RevenueCat → subscription mapping
+npm run test:catalogue           # Wikidata / MusicBrainz → title mapping
 ```
 
 ## Backend: Supabase
@@ -51,7 +52,9 @@ The app can't break the rules below, because the database itself enforces them (
   - **`private.access()`:** gives access to your own active plan, or to a filled place on an active Family or Extended plan.
   - **Ratings and comments:** refused by the database without access.
   - **Family invitations (`HEART-XXXX-XXXX`):** only the owner can make them. Each works once, is limited by the plan's places, and is cancelled when replaced or the member is removed.
-  - **Day-5 trial reminder:** posted by an hourly `pg_cron` job. It's always sent, because it's a required reminder.
+  - **Catalogue:** films, TV and books come from Wikidata and albums from MusicBrainz, both public-domain data. Only the `catalogue` edge function writes these titles, after re-reading them at the source. Details and setup steps are in [`docs/catalogue.md`](docs/catalogue.md).
+  - **Trending:** what the most people rated or added in the last 7 days, with a 3-person minimum and never who.
+- **Day-5 trial reminder:** posted by an hourly `pg_cron` job. It's always sent, because it's a required reminder.
 
 ## What's built
 
@@ -66,7 +69,8 @@ The app can't break the rules below, because the database itself enforces them (
   - **Join a family plan:** works from a link even when signed out.
   - **Trial-ending page.**
   - Account deletion warns a paying user to cancel in the store first.
-- **Pages:** Jar of hearts, Search & add (custom titles are saved to the server), Privacy, and Profile & settings (name, privacy, notification preferences, sign out).
+- **Search & add:** real search across films, TV, books and albums. Results already on SofaList show instantly, then the outside databases. Picking a result saves it on the server, so watchlists, ratings and comments work the same as for Top 50 titles. You can still add something yourself if it isn't found.
+- **Pages:** Jar of hearts, Privacy, and Profile & settings (name, privacy, notification preferences, sign out).
 - **Circle:**
   - **Invite:** your personal code, with Share, Copy and Make a new code, plus a "Have a code?" box.
   - **Join a circle:** opens from `sofalist://join/CODE`. It works signed out too: the code is remembered through sign-up.
@@ -75,7 +79,7 @@ The app can't break the rules below, because the database itself enforces them (
   - **Notifications:** with a live badge.
   - **Everyone's Top 20.**
 
-Trending still shows labelled sample rows until the daily backend job exists.
+Trending shows real activity from the last 7 days, so it stays empty until people use the app.
 
 ## Not built yet
 
@@ -86,7 +90,7 @@ Trending still shows labelled sample rows until the daily backend job exists.
 4. **Email before launch:**
    - Set up custom SMTP in Supabase, because the built-in sender is rate-limited and meant for testing only.
    - Set the Site URL and redirect URLs so the confirmation and reset links open the app.
-5. **Real catalogue:** TMDB, Open Library and MusicBrainz IDs, plus the daily trending job.
+5. **Catalogue setup:** add the `CATALOGUE_CONTACT` and `WIKIMEDIA_TOKEN` secrets before launch (see [`docs/catalogue.md`](docs/catalogue.md)). No cover art: none of the free sources allows it in a paid app.
 
 ## Testing
 
@@ -94,6 +98,7 @@ Trending still shows labelled sample rows until the daily backend job exists.
 npm run typecheck
 npm run lint
 npm run test:billing             # RevenueCat → subscription mapping
+npm run test:catalogue           # Wikidata / MusicBrainz → title mapping
 npx expo export --platform web   # then serve dist/ to try it in a browser
 ```
 
@@ -110,11 +115,11 @@ Tested end to end against the live project:
 ```
 src/app/            routes (Expo Router). (tabs)/ = bottom tabs; other files slide in from the right
 src/components/     ui.tsx (text, buttons, chips, rows), Icon, Logo, Jar, RatingSheet, Toast, TitleRow
-src/data/           catalogue (generated from the prototype), model helpers, mock feeds
+src/data/           built-in Top 50 titles (from the prototype), model helpers, category tabs
 src/state/store.ts  local copy of the user's server data, optimistic writes with rollback
-src/lib/            Supabase client, billing (RevenueCat), invites, worldwide hook
-supabase/functions  revenuecat-webhook, sync-subscription (+ _shared mapping and its tests)
-docs/               store rules check, billing setup checklist
+src/lib/            Supabase client, billing (RevenueCat), invites, worldwide and trending hooks
+supabase/functions  catalogue, revenuecat-webhook, sync-subscription (+ _shared mapping code and its tests)
+docs/               store rules check, billing setup checklist, catalogue sources and setup
 supabase/migrations database schema, security rules, catalogue seed
 src/theme.ts        design tokens
 ```
