@@ -83,6 +83,7 @@ Trending shows real activity from the last 7 days, so it stays empty until peopl
 
 ## Not built yet
 
+0. **Phone builds:** step by step in [`docs/eas-build.md`](docs/eas-build.md).
 1. **Store setup:** the products, RevenueCat, the secrets and a development build. Step by step in [`docs/billing-setup.md`](docs/billing-setup.md). Real purchases can't be tested until that's done.
 2. **Push notifications:** these need `expo-notifications`, an EAS project and Apple/Google push credentials. In-app notifications already work.
    - **Invite links:** links only open the app if it's installed. Universal links (https links that open the app) need a domain and an app build.

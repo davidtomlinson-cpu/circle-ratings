@@ -1,0 +1,12 @@
+# Public values: safe to ship in the app. Row level security protects the data. 0
+# Never put the database password or a secret/service key here. 0
+EXPO_PUBLIC_SUPABASE_URL 40
+EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY 46
+ 0
+# RevenueCat public SDK keys (safe to ship). From RevenueCat → Project → API keys. See docs/billing-setup.md. 0
+EXPO_PUBLIC_REVENUECAT_IOS_KEY 0
+EXPO_PUBLIC_REVENUECAT_ANDROID_KEY 0
+ 0
+# Required by both stores before submission: public pages for your terms and privacy policy. 0
+EXPO_PUBLIC_TERMS_URL 0
+EXPO_PUBLIC_PRIVACY_URL 0
