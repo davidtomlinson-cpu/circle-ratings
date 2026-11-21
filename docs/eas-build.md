@@ -14,6 +14,8 @@ These are already set up in `eas.json`.
 
 - `expo-dev-client` is installed, and the build profiles are in `eas.json`. Each profile uses the Expo environment with the same name.
 - App ID on both stores: `com.davala.circleratings`. Display name: SofaClub.
+- Apple team: **Nicola Jane Smith (Individual), team ID `VW922YLQXR`**. This team owns SofaClub on the App Store, and the store shows that name as the seller. Decided 21 Nov 2026.
+- Android signing key: created by Expo and kept on Expo's servers. Never delete it: Google Play updates must be signed with the same key.
 - iOS is marked as using only standard encryption (HTTPS), so App Store Connect won't ask the export-compliance question on every upload.
 - Build numbers are kept on Expo's servers and go up automatically for production builds.
 - The public keys the app needs (Supabase URL and publishable key) are in `.env`, which is committed and uploaded with each build. The RevenueCat keys are still empty. Until they're filled in, the paywall shows preview prices and can't take payment.
