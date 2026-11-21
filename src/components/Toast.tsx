@@ -27,7 +27,7 @@ export function Toast() {
   if (!t) return null;
   const it = item(t.key, s.custom);
   const who = viewers(s);
-  const world = t.val === 5 ? (s.fresh[t.key] && s.settings.contribute ? 'Added anonymously to Loved worldwide' : 'Not added to Loved worldwide') : '';
+  const world = t.val === 5 ? (s.fresh[t.key] && s.settings.contribute ? 'Added anonymously to Loved by the Club' : 'Not added to Loved by the Club') : '';
 
   return (
     <Animated.View

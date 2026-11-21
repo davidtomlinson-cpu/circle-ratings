@@ -1,4 +1,4 @@
-// Category tabs shared by the Trending and Loved worldwide screens.
+// Category tabs shared by the Trending and Loved by the Club screens.
 import type { Cat } from './types';
 
 export type TrendCat = 'Films' | 'TV series' | 'Albums' | 'Books';

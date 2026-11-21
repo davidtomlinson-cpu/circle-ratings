@@ -106,7 +106,7 @@ export default function Today() {
       </Card>
 
       <Card onPress={() => router.push('/world')} style={{ gap: 8 }}>
-        <Row><Icon name="globe" size={18} /><T size={14} weight="bold" style={{ flex: 1 }}>Loved worldwide · live</T><Icon name="chevronRight" size={18} /></Row>
+        <Row><Icon name="users" size={18} /><T size={14} weight="bold" style={{ flex: 1 }}>Loved by the Club · live</T><Icon name="chevronRight" size={18} /></Row>
         {loved.rows.map((r) => (
           <TitleRow key={r.key} k={r.key} action={<Row gap={4}><HeartGlyph size={13} /><T size={13} weight="bold" color={color.a300}>{r.total.toLocaleString('en-GB')}</T></Row>} />
         ))}

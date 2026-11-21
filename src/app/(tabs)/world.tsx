@@ -41,7 +41,7 @@ export default function World() {
   return (
     <Page tabs>
       <View style={{ gap: 6 }}>
-        <Row gap={10}><H size={26}>Loved worldwide</H><LiveBadge /></Row>
+        <Row gap={10}><H size={26}>Loved by the Club</H><LiveBadge /></Row>
         <T size={13} color={c.textSoft}>
           What the world is watching and loving right now. Only 5 ♥ ratings made after finishing something from a watchlist count, added anonymously. Ticking off things people saw years ago doesn’t.
         </T>
@@ -77,7 +77,7 @@ export default function World() {
 
       {w.error && (
         <Card style={{ gap: 10 }}>
-          <T size={14}>Couldn’t load the worldwide list.</T>
+          <T size={14}>Couldn’t load the Club list.</T>
           <Btn small label="Try again" onPress={w.reload} style={{ alignSelf: 'flex-start' }} />
         </Card>
       )}

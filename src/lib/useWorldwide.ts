@@ -5,7 +5,7 @@ import { supabase } from './supabase';
 
 export type WorldRow = { key: string; total: number; today: number };
 
-/** Loved worldwide from the server. Titles only appear once they pass the vote threshold. */
+/** Loved by the Club (code name: Loved worldwide) from the server. Titles only appear once they pass the vote threshold. */
 export function useWorldwide(cat: Cat | 'All' = 'All', classics = true, limit = 30) {
   const [rows, setRows] = useState<WorldRow[]>([]);
   const [total, setTotal] = useState<number | null>(null);

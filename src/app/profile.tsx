@@ -93,7 +93,7 @@ export default function Profile() {
 
       <Group title="Privacy">
         <Item first label="Who can see My list" sub={VIS[s.vis]} onPress={() => router.push('/privacy')} />
-        <Item label="Share my 5 ♥ titles worldwide" sub="Added anonymously to Loved worldwide" right={<Toggle value={s.settings.contribute} onChange={(v) => s.setSetting('contribute', v)} />} />
+        <Item label="Share my 5 ♥ titles with the Club" sub="Added anonymously to Loved by the Club" right={<Toggle value={s.settings.contribute} onChange={(v) => s.setSetting('contribute', v)} />} />
       </Group>
 
       <Group title="Notifications">

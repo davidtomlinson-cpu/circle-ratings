@@ -37,7 +37,7 @@ The app can't break the rules below, because the database itself enforces them (
   - Your ratings are visible to you, and to your circle only when your list visibility allows it ("all", "some" with a per-person grant, or "locked").
   - Comments are visible to the author's circle.
 - **No rating limit:** rate as many titles as you like. (An earlier monthly "jar of hearts" budget was removed on 21 Nov 2026.)
-- **Loved worldwide:**
+- **Loved by the Club** (the Club tab; called "Loved worldwide" in the code and database):
   - Only a 5 ♥ for a title that was on your watchlist counts. The database sets that flag, not the app.
   - Votes are stored as a salted hash, never your user id.
   - A title only appears once at least 3 people have loved it. The same 3-vote minimum applies to a title's "Everyone" average.
@@ -59,7 +59,7 @@ The app can't break the rules below, because the database itself enforces them (
 ## What's built
 
 - **Accounts:** email sign-up, sign-in, password reset and in-app account deletion. You stay signed in between launches. App pages are locked when you're signed out.
-- **Tabs:** Today, Top 50, World, Trending, Watchlist and My list.
+- **Tabs:** Today, Top 50, Club, Trending, Watchlist and My list.
 - **Rating sheet:** tap or drag across the hearts. The app updates straight away. If the server refuses (for example, you're out of hearts), the change is undone and a message explains why.
 - **Title detail:** your rating, your circle's real ratings and average, and the Everyone average. Comments are saved to the server.
 - **Subscriptions:**

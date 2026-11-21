@@ -8,7 +8,7 @@ import { alpha, color } from '../../theme';
 const TABS: { name: string; label: string; icon: IconName }[] = [
   { name: 'index', label: 'Today', icon: 'sun' },
   { name: 'top50', label: 'Top 50', icon: 'circleCheck' },
-  { name: 'world', label: 'World', icon: 'globe' },
+  { name: 'world', label: 'Club', icon: 'users' },
   { name: 'trending', label: 'Trending', icon: 'sparkles' },
   { name: 'watchlist', label: 'Watchlist', icon: 'bookmark' },
   { name: 'mylist', label: 'My list', icon: 'heart5' },

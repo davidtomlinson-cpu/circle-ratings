@@ -16,7 +16,7 @@ export default function Privacy() {
       <BackHeader title="Privacy" />
       <View>
         <H size={26}>Who can see My list</H>
-        <T size={13} color={c.textSoft}>Covers your ratings and rating notifications. Loved worldwide stays anonymous either way.</T>
+        <T size={13} color={c.textSoft}>Covers your ratings and rating notifications. Loved by the Club stays anonymous either way.</T>
       </View>
       <View style={{ gap: 10 }} accessibilityRole="radiogroup">
         {OPTIONS.map((o) => {
@@ -62,8 +62,8 @@ export default function Privacy() {
 
       <Row style={{ backgroundColor: color.n800, borderRadius: 24, padding: 16 }}>
         <View style={{ flex: 1 }}>
-          <T size={14} weight="bold">Share my 5 ♥ titles worldwide</T>
-          <T size={12} color={c.textMuted}>Added anonymously to Loved worldwide</T>
+          <T size={14} weight="bold">Share my 5 ♥ titles with the Club</T>
+          <T size={12} color={c.textMuted}>Added anonymously to Loved by the Club</T>
         </View>
         <Switch
           value={s.settings.contribute}

@@ -34,10 +34,10 @@ export function RatingSheet() {
   const fromWatchlist = !!s.want[key];
   const label = !val ? 'Pick your hearts' : s.my[key] ? 'Update rating' : 'Save rating';
   const note = fromWatchlist && s.settings.contribute
-    ? 'Shared with your circle. A 5 ♥ for something just finished from your watchlist also joins Loved worldwide.'
+    ? 'Shared with your circle. A 5 ♥ for something just finished from your watchlist also joins Loved by the Club.'
     : fromWatchlist
-      ? 'Shared with your circle. You’ve turned off worldwide sharing.'
-      : 'Shared with your circle. Rated straight from a list, so it stays out of Loved worldwide.';
+      ? 'Shared with your circle. You’ve turned off sharing with the Club.'
+      : 'Shared with your circle. Rated straight from a list, so it stays out of Loved by the Club.';
 
   const pick = (e: GestureResponderEvent) => {
     const x = e.nativeEvent.locationX;

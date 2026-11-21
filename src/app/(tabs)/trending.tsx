@@ -43,7 +43,7 @@ export default function Trending() {
         <Row>
           <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: color.a400 }} />
           <View style={{ flex: 1 }}>
-            <T size={14} weight="bold">Loved worldwide · live</T>
+            <T size={14} weight="bold">Loved by the Club · live</T>
             <T size={12} color={c.textMuted}>5 ♥ ratings from everyone’s watched lists</T>
           </View>
           <Icon name="chevronRight" size={18} />

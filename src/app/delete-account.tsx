@@ -14,7 +14,7 @@ const GOES = [
   'Your place in other people’s circles, and theirs in yours',
   'Your invite code and notifications',
   'Titles you added yourself',
-  'Your anonymous 5 ♥ votes in Loved worldwide',
+  'Your anonymous 5 ♥ votes in Loved by the Club',
 ];
 
 export default function DeleteAccount() {
