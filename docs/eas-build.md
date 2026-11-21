@@ -80,6 +80,8 @@ That sends the current code to every **preview** build (our test apps). `npm run
 
 **When a new build is still needed:** adding or upgrading a package with native code, changing `app.json` (icon, name, permissions), or upgrading Expo. The runtime version uses Expo's "fingerprint" rule: it changes on its own whenever the native side changes, so an update can never reach a phone whose build can't run it. If an update doesn't arrive, the phone probably needs a fresh build.
 
+**Gotcha: `package.json` scripts count as native.** Expo's fingerprint includes the `scripts` section of `package.json`, so editing a command shortcut between builds makes updates go to a runtime no installed phone has, and phones silently ignore them. Before publishing, check the runtime matches the installed builds: `npx expo-updates runtimeversion:resolve --platform ios` (and `android`). At the next native build, add a `fingerprint.config.js` that skips scripts, so this stops mattering.
+
 **Undoing a bad update:** `npx eas-cli@latest update:rollback` sends phones back to the previous update.
 
 ## Later

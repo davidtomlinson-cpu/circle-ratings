@@ -103,3 +103,6 @@ t('keys and cache normalisation', () => {
 });
 
 console.log(`${n} passed`);
+
+// The Trending helpers' tests run from here too, so `npm run test:catalogue` covers both.
+await import('./trending.test.ts');
