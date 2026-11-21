@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { Icon } from '../../components/Icon';
+import { SearchField } from '../../components/SearchField';
 import { AddBtn, openTitle } from '../../components/TitleRow';
 import { Card, Chip, ChipRow, Disc, H, HeartPill, ListRow, Page, Row, SectionLabel, T } from '../../components/ui';
 import type { Cat } from '../../data/types';
@@ -57,6 +58,7 @@ export default function Trending() {
       <ChipRow>
         {TABS.map((x) => <Chip key={x.label} label={x.label} on={tab === x.label} onPress={() => setTab(x.label)} />)}
       </ChipRow>
+      <SearchField cat={t.cat} />
 
       {/* Only shown once SofaClub has enough activity: at least 3 people on a title this week. */}
       {club.rows.length > 0 && !t.cinema && (

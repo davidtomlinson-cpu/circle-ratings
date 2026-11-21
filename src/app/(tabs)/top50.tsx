@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { Icon } from '../../components/Icon';
+import { SearchField } from '../../components/SearchField';
 import { openTitle } from '../../components/TitleRow';
 import { Card, Chip, ChipRow, Disc, H, HeartPill, ListRow, Page, ProgressBar, Row, T, tint } from '../../components/ui';
 import { KIND, top50Keys, item } from '../../data/model';
@@ -106,6 +107,7 @@ export default function Top50() {
       <ChipRow>
         {CATS.map((x) => <Chip key={x} label={count(x) ? `${x} · ${count(x)}` : x} on={x === cat} onPress={() => setCat(x)} />)}
       </ChipRow>
+      <SearchField cat={cat} />
 
       <Card style={{ paddingVertical: 12, borderRadius: 999 }}>
         <Row>

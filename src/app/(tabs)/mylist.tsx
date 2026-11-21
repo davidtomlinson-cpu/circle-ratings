@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { View } from 'react-native';
 import { CatChips } from '../../components/CatChips';
+import { SearchField } from '../../components/SearchField';
 import { TitleRow } from '../../components/TitleRow';
 import { Chip, ChipRow, H, Page, Row, T } from '../../components/ui';
 import { ago, item } from '../../data/model';
@@ -27,6 +28,7 @@ export default function MyList() {
         <T size={13} color={c.textSoft}>Everything you’ve watched, read and heard, with your hearts.</T>
       </View>
       <CatChips keys={all} value={cat} onChange={setCat} />
+      <SearchField cat={cat} />
       <ChipRow>
         <Chip label={`All ratings · ${inCat.length}`} on={!five} onPress={() => setFive(false)} />
         <Chip label={`My 5 ♥ · ${fives.length}`} on={five} onPress={() => setFive(true)} />

@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Icon } from '../../components/Icon';
+import { SearchField } from '../../components/SearchField';
 import { Animated, View } from 'react-native';
 import { AddBtn, openTitle } from '../../components/TitleRow';
 import { Btn, Card, Chip, ChipRow, Disc, H, HeartGlyph, HeartPill, ListRow, Page, Row, T } from '../../components/ui';
@@ -68,6 +69,7 @@ export default function World() {
         <Chip label="All" on={cat === 'All'} onPress={() => setCat('All')} />
         {TREND_CATS.map((t) => <Chip key={t.cat} label={t.label} on={cat === t.cat} onPress={() => setCat(t.cat)} />)}
       </ChipRow>
+      <SearchField cat={cat} />
       <Row gap={4} style={{ alignSelf: 'flex-start', backgroundColor: color.n800, padding: 4, borderRadius: 999 }}>
         <Chip label="All-time classics" on={mode === 'classics'} onPress={() => setMode('classics')} />
         <Chip label="New & now" on={mode === 'new'} onPress={() => setMode('new')} />

@@ -1,12 +1,13 @@
 // Search & add: titles we already have (instant), then the real catalogue (Wikidata for films, TV and
 // books; MusicBrainz for albums). Picking a catalogue result saves it on the server first, so watchlists,
 // ratings and comments all work the same as for Top 50 titles.
+import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, TextInput, View } from 'react-native';
 import { Icon } from '../components/Icon';
 import { openTitle, TitleRow } from '../components/TitleRow';
 import { BackHeader, Btn, Chip, ChipRow, Page, Row, SectionLabel, T } from '../components/ui';
-import { EXTRA_KEYS, KIND } from '../data/model';
+import { EXTRA_KEYS, item, KIND } from '../data/model';
 import { CATS, type Cat } from '../data/types';
 import { supabase } from '../lib/supabase';
 import { useApp, type TitleRow as TitleData } from '../state/store';
@@ -17,10 +18,14 @@ const SOURCE_NAME: Record<string, string> = { wikidata: 'film, TV and book', mus
 
 export default function Search() {
   const addCustom = useApp((s) => s.addCustom);
+  const custom = useApp((s) => s.custom);
   const learnTitles = useApp((s) => s.learnTitles);
   const [q, setQ] = useState('');
-  const [cat, setCat] = useState<Cat | 'All'>('All');
-  const [newCat, setNewCat] = useState<Cat>('Movies');
+  // Opened from a section (e.g. Books in Top 50): start on that category, and "add it yourself" uses it too.
+  const params = useLocalSearchParams<{ cat?: string }>();
+  const start = CATS.includes(params.cat as Cat) ? (params.cat as Cat) : null;
+  const [cat, setCat] = useState<Cat | 'All'>(start ?? 'All');
+  const [newCat, setNewCat] = useState<Cat>(start ?? 'Movies');
   const [local, setLocal] = useState<Found[]>([]);
   const [remote, setRemote] = useState<{ q: string; rows: Found[]; busy: string[] } | null>(null);
   const query = q.trim();
@@ -82,13 +87,13 @@ export default function Search() {
         {searching && !done && <ActivityIndicator size="small" color={color.n400} />}
       </Row>
       <ChipRow>
-        {(['All', ...CATS] as const).map((x) => <Chip key={x} label={x === 'All' ? 'All' : KIND[x].short} on={cat === x} onPress={() => setCat(x)} />)}
+        {(['All', ...CATS] as const).map((x) => <Chip key={x} label={x === 'All' ? 'All' : KIND[x].short} on={cat === x} onPress={() => { setCat(x); if (x !== 'All') setNewCat(x); }} />)}
       </ChipRow>
 
       {searching ? (
         <SectionLabel>{done ? `${results.length} ${results.length === 1 ? 'result' : 'results'}` : 'Searching…'}</SectionLabel>
       ) : (
-        <SectionLabel>Not in the Top 50 · try these</SectionLabel>
+        <SectionLabel>{query.length ? 'Type 2 or more letters' : 'Not in the Top 50 · try these'}</SectionLabel>
       )}
 
       {busy.length > 0 && (
@@ -98,7 +103,7 @@ export default function Search() {
       )}
 
       <View style={{ marginHorizontal: -6 }}>
-        {(searching ? results.map((r) => r.key) : EXTRA_KEYS).map((k) => (
+        {(searching ? results.map((r) => r.key) : EXTRA_KEYS.filter((k) => cat === 'All' || item(k, custom).cat === cat)).map((k) => (
           <TitleRow key={k} k={k} onPress={() => void pick(k, 'open')} action={<SearchAddBtn k={k} />} />
         ))}
       </View>
@@ -107,7 +112,7 @@ export default function Search() {
         <View style={{ gap: 10, backgroundColor: color.n800, borderRadius: 24, padding: 16 }}>
           <T size={14} weight="bold">Can’t find it? Add “{query}” yourself</T>
           <ChipRow>
-            {CATS.map((x) => <Chip key={x} label={x} on={x === newCat} onPress={() => setNewCat(x)} />)}
+            {CATS.map((x) => <Chip key={x} label={KIND[x].short} on={x === newCat} onPress={() => setNewCat(x)} />)}
           </ChipRow>
           <Btn small label="Add to my watchlist" onPress={() => { const k = addCustom(query, newCat); setQ(''); openTitle(k); }} />
         </View>
