@@ -1,6 +1,7 @@
 // Catalogue search and add, for signed-in users.
 //   POST { action: 'search', q, category? } -> { results, busy }
 //   POST { action: 'add', key }             -> { title }
+//   POST { action: 'describe', key }        -> { summary, url }  (opening of the Wikipedia article, cached 30 days)
 // Films, TV and books come from Wikidata, albums from MusicBrainz (both CC0, so we can store them).
 // Titles are only ever written here, with the service role, after re-reading them at the source:
 // the app can't invent or alter catalogue entries.
@@ -9,7 +10,8 @@ import {
   rankAlbums, rankByPopularity, type Source,
 } from '../_shared/catalogue.ts';
 import { admin } from '../_shared/admin.ts';
-import { Busy, mb, wd, wdRows } from '../_shared/sources.ts';
+import { shortSummary, wikidataFromMb } from '../_shared/describe.ts';
+import { Busy, fetchJson, mb, wd, wdEntities, wdRows } from '../_shared/sources.ts';
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -123,6 +125,51 @@ async function add(db: Db, key: string) {
   return { status: 200, body: { title: await existing() } };
 }
 
+const DAY = 86400000;
+
+/**
+ * A short description for a title: the opening of its English Wikipedia article (found through Wikidata;
+ * albums through MusicBrainz's Wikidata link). Cached for 30 days; "nothing found" is rechecked after 7.
+ * Wikipedia text is CC BY-SA: the app shows it with credit and a link to the article.
+ */
+async function describe(db: Db, key: string) {
+  const { data: t } = await db.from('titles').select('id, wikidata_id, musicbrainz_id').eq('key', key).maybeSingle();
+  if (!t) return { status: 404, body: { error: 'not_found' } };
+  const { data: c } = await db.from('title_descriptions').select('summary, url, fetched_at').eq('title_id', t.id).maybeSingle();
+  const age = c ? Date.now() - Date.parse(c.fetched_at) : Infinity;
+  const cached = c && { summary: c.summary || null, url: c.url };
+  if (c && age < (c.summary ? 30 : 7) * DAY) return { status: 200, body: cached };
+
+  try {
+    let q: string | null = t.wikidata_id;
+    if (!q && t.musicbrainz_id) {
+      q = wikidataFromMb(((await mb(`release-group/${t.musicbrainz_id}?inc=url-rels`)) as { relations?: { type?: string; url?: { resource?: string } }[] }).relations);
+    }
+    let summary = '';
+    let url: string | null = null;
+    if (q) {
+      const ents = await wdEntities([q], 'sitelinks');
+      const article = (ents[q]?.sitelinks as Record<string, { title?: string }> | undefined)?.enwiki?.title;
+      if (article) {
+        const page = encodeURIComponent(article.replace(/ /g, '_'));
+        const s = (await fetchJson(`https://en.wikipedia.org/api/rest_v1/page/summary/${page}`).catch((e) => {
+          if (e instanceof Busy) throw e;
+          return null; // missing or renamed page: treat as no description
+        })) as { type?: string; extract?: string; content_urls?: { desktop?: { page?: string } } } | null;
+        if (s && s.type !== 'disambiguation' && s.extract) {
+          summary = shortSummary(s.extract);
+          url = s.content_urls?.desktop?.page ?? `https://en.wikipedia.org/wiki/${page}`;
+        }
+      }
+    }
+    await db.from('title_descriptions').upsert({ title_id: t.id, summary, url, fetched_at: new Date().toISOString() });
+    return { status: 200, body: { summary: summary || null, url } };
+  } catch (e) {
+    if (cached) return { status: 200, body: cached }; // stale is better than nothing
+    return { status: e instanceof Busy ? 503 : 502, body: { error: e instanceof Busy ? 'catalogue_busy' : 'catalogue_error' } };
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
   if (req.method !== 'POST') return json(405, { error: 'method_not_allowed' });
@@ -142,6 +189,10 @@ Deno.serve(async (req) => {
   }
   if (body.action === 'add' && typeof body.key === 'string') {
     const r = await add(db, body.key);
+    return json(r.status, r.body);
+  }
+  if (body.action === 'describe' && typeof body.key === 'string' && body.key.length <= 100) {
+    const r = await describe(db, body.key);
     return json(r.status, r.body);
   }
   return json(400, { error: 'bad_action' });

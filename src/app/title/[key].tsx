@@ -1,8 +1,9 @@
 import { useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { TextInput, View } from 'react-native';
+import { Linking, Pressable, TextInput, View } from 'react-native';
 import { BackHeader, Btn, Card, Disc, H, HeartGlyph, Hearts, Page, Row, T } from '../../components/ui';
 import { item } from '../../data/model';
+import { useDescription } from '../../lib/useDescription';
 import { friendlyError, supabase } from '../../lib/supabase';
 import { useApp, useMe, useTitles } from '../../state/store';
 import { c, color } from '../../theme';
@@ -29,6 +30,8 @@ export default function TitleDetail() {
   const it = item(key, s.custom);
   const mine = s.my[key] ?? 0;
   const onWant = !!s.want[key];
+  const { description, loading: describing } = useDescription(key);
+  const [more, setMore] = useState(false);
 
   const [circle, setCircle] = useState<CircleRating[]>([]);
   const [everyone, setEveryone] = useState<number | null>(null);
@@ -90,6 +93,21 @@ export default function TitleDetail() {
           </View>
         )}
       </View>
+
+      {description ? (
+        <Card style={{ gap: 8, padding: 16 }}>
+          <Pressable onPress={() => setMore((m) => !m)} accessibilityRole="button" accessibilityHint={more ? 'Shows less' : 'Shows the full description'}>
+            <T size={14} color={c.textSoft} numberOfLines={more ? undefined : 4}>{description.summary}</T>
+          </Pressable>
+          {!!description.url && (
+            <Pressable onPress={() => void Linking.openURL(description.url!)} accessibilityRole="link">
+              <T size={11} color={c.textMuted}>From Wikipedia · CC BY-SA · <T size={11} color={c.link}>Read more</T></T>
+            </Pressable>
+          )}
+        </Card>
+      ) : describing ? (
+        <T size={12} color={c.textMuted} center>Loading description…</T>
+      ) : null}
 
       <Row gap={8}>
         <Stat label="You" value={mine ? String(mine) : '–'} heart={!!mine} />

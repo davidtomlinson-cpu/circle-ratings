@@ -8,6 +8,7 @@ SofaClub searches real databases for films, TV, books and albums. Everything we 
 | Albums | [MusicBrainz](https://musicbrainz.org) core data | CC0 (public domain) | Free. MetaBrainz asks commercial users to support them (see below) |
 | Trending: films, TV, books | [Wikimedia page views](https://wikimedia.org/api/rest_v1/) | CC0 (public domain) | Free |
 | Trending: albums | [ListenBrainz](https://listenbrainz.org) statistics | CC0 (public domain) | Free |
+| Title descriptions | Opening of the [English Wikipedia](https://en.wikipedia.org) article | **CC BY-SA 4.0**: must be credited and linked | Free |
 
 We show no posters or cover art. Cover images are copyrighted by their owners, and none of the free sources gives us the right to use them in a paid app. The app's letter discs stand in for covers.
 
@@ -22,6 +23,12 @@ We show no posters or cover art. Cover images are copyrighted by their owners, a
    - **Trending this week (the wider world).** Rebuilt every day at 05:17 UTC by the `trending-refresh` edge function, which a database job calls with a secret kept in Vault. Films, TV and books are ranked by English Wikipedia page views over the last 7 days, kept only if Wikidata says they're a film, series or book. Albums come from ListenBrainz's most-played albums this week, re-ranked by an *estimate of how many different people* played them (weekly plays divided by average plays per listener), because raw play counts let a few superfans fill the chart. Studio albums only. If a source fails, that list keeps the previous day's version.
    - **In cinemas.** The trending films that came out in UK cinemas in the last 8 weeks. The release date is Wikidata's UK date, or the US date if there's no UK one. Films distributed by a streaming service (Netflix, Apple TV, Disney+ and so on) are left out. A film with no UK or US date in Wikidata won't appear here, but still shows under Films.
    - **Popular on SofaClub.** What the most people on SofaClub rated or added to a watchlist in the last 7 days. A title needs at least 3 people, and we never show who. It only appears once there's enough activity.
+
+## Descriptions
+
+Opening a title shows the first two or three sentences of its English Wikipedia article. The `catalogue` function finds the article through Wikidata (albums through MusicBrainz's Wikidata link), trims it, and caches it in `title_descriptions` for 30 days ("nothing found" is rechecked after 7). Titles people add themselves have no description.
+
+Wikipedia text isn't public domain like the rest: it's CC BY-SA 4.0. That allows use in a paid app as long as each description is credited and linked, which the title page does ("From Wikipedia · CC BY-SA · Read more"). Keep that line if the design changes. The terms of use should mention it too (see the lawyer note in the terms draft).
 
 ## Setup before launch
 
