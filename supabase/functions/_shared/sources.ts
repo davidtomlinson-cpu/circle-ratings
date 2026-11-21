@@ -11,16 +11,47 @@ const wmAuth = (): Record<string, string> => (WM_TOKEN ? { Authorization: `Beare
 export class Busy extends Error {}
 export const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+// ---- Health tally: how each source answered during this request (flushed to source_health) ----------
+
+type Outcome = 'ok' | 'busy' | 'failed';
+const SOURCE_BY_HOST: Record<string, string> = {
+  'www.wikidata.org': 'wikidata', 'query.wikidata.org': 'wikidata-query', 'en.wikipedia.org': 'wikipedia',
+  'wikimedia.org': 'wikimedia-pageviews', 'musicbrainz.org': 'musicbrainz', 'api.listenbrainz.org': 'listenbrainz',
+};
+let tally: Record<string, Record<Outcome, number>> = {};
+export function mark(source: string, outcome: Outcome, n = 1) {
+  const t = (tally[source] ??= { ok: 0, busy: 0, failed: 0 });
+  t[outcome] = Math.max(0, t[outcome] + n);
+}
+const markUrl = (url: string, outcome: Outcome) => mark(SOURCE_BY_HOST[new URL(url).host] ?? new URL(url).host, outcome);
+
+/** Save this request's tally (call once, at the end of a request). Never throws. */
+export async function flushHealth(db: { rpc: (fn: string, args: Record<string, unknown>) => PromiseLike<unknown> }) {
+  const counts = tally;
+  tally = {};
+  if (!Object.keys(counts).length) return;
+  try { await db.rpc('record_source_health', { p_counts: counts }); } catch { /* logging must never break a request */ }
+}
+
 export async function fetchJson(url: string, init: { headers?: Record<string, string>; body?: string; method?: string } = {}, tries = 3, wait = 1200): Promise<unknown> {
   for (let i = 0; i < tries; i++) {
-    const r = await fetch(url, { ...init, headers: { 'User-Agent': UA, Accept: 'application/json', ...init.headers } });
-    if (r.ok) return r.json();
+    let r: Response;
+    try {
+      r = await fetch(url, { ...init, headers: { 'User-Agent': UA, Accept: 'application/json', ...init.headers } });
+    } catch (e) {
+      markUrl(url, 'failed');
+      throw e;
+    }
+    if (r.ok) { markUrl(url, 'ok'); return r.json(); }
     // 429 (Wikimedia) and 503 (MusicBrainz) mean "slow down": wait a little and try again.
     if (r.status === 429 || r.status === 503) {
+      markUrl(url, 'busy');
       await r.body?.cancel();
       if (i < tries - 1) { await sleep(wait * (i + 1)); continue; }
       throw new Busy(`${new URL(url).host} is busy`);
     }
+    // A 404 is a normal answer (no such page), not the source failing.
+    markUrl(url, r.status === 404 ? 'ok' : 'failed');
     await r.body?.cancel();
     throw new Error(`${new URL(url).host} answered ${r.status}`);
   }
@@ -38,7 +69,11 @@ export async function wd(params: Record<string, string>, tries = 3, wait = 1200)
   )) as { error?: { code?: string } };
   // Wikidata sometimes refuses inside a normal 200 answer (rate limited, server lag). Treat that as busy,
   // never as "no results", or we'd cache an empty answer.
-  if (r.error) throw new Busy(`wikidata: ${r.error.code ?? 'error'}`);
+  if (r.error) {
+    mark('wikidata', 'ok', -1); // fetchJson counted it as ok; it was really a refusal
+    mark('wikidata', 'busy');
+    throw new Busy(`wikidata: ${r.error.code ?? 'error'}`);
+  }
   return r;
 }
 

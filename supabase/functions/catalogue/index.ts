@@ -10,8 +10,8 @@ import {
   rankAlbums, rankByPopularity, type Source,
 } from '../_shared/catalogue.ts';
 import { admin } from '../_shared/admin.ts';
-import { shortSummary, wikidataFromMb } from '../_shared/describe.ts';
-import { Busy, fetchJson, mb, wd, wdEntities, wdRows } from '../_shared/sources.ts';
+import { describeTitle } from '../_shared/descriptions.ts';
+import { Busy, flushHealth, mb, wd, wdRows } from '../_shared/sources.ts';
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -125,55 +125,16 @@ async function add(db: Db, key: string) {
   return { status: 200, body: { title: await existing() } };
 }
 
-const DAY = 86400000;
-
-/**
- * A short description for a title: the opening of its English Wikipedia article (found through Wikidata;
- * albums through MusicBrainz's Wikidata link). Cached for 30 days; "nothing found" is rechecked after 7.
- * Wikipedia text is CC BY-SA: the app shows it with credit and a link to the article.
- */
+/** A short description for a title (see _shared/descriptions.ts). */
 async function describe(db: Db, key: string) {
   const { data: t } = await db.from('titles').select('id, wikidata_id, musicbrainz_id').eq('key', key).maybeSingle();
   if (!t) return { status: 404, body: { error: 'not_found' } };
-  const { data: c } = await db.from('title_descriptions').select('summary, url, fetched_at').eq('title_id', t.id).maybeSingle();
-  const age = c ? Date.now() - Date.parse(c.fetched_at) : Infinity;
-  const cached = c && { summary: c.summary || null, url: c.url };
-  if (c && age < (c.summary ? 30 : 7) * DAY) return { status: 200, body: cached };
-
-  try {
-    let q: string | null = t.wikidata_id;
-    if (!q && t.musicbrainz_id) {
-      q = wikidataFromMb(((await mb(`release-group/${t.musicbrainz_id}?inc=url-rels`)) as { relations?: { type?: string; url?: { resource?: string } }[] }).relations);
-    }
-    let summary = '';
-    let url: string | null = null;
-    if (q) {
-      const ents = await wdEntities([q], 'sitelinks');
-      const article = (ents[q]?.sitelinks as Record<string, { title?: string }> | undefined)?.enwiki?.title;
-      if (article) {
-        const page = encodeURIComponent(article.replace(/ /g, '_'));
-        const s = (await fetchJson(`https://en.wikipedia.org/api/rest_v1/page/summary/${page}`).catch((e) => {
-          if (e instanceof Busy) throw e;
-          return null; // missing or renamed page: treat as no description
-        })) as { type?: string; extract?: string; content_urls?: { desktop?: { page?: string } } } | null;
-        if (s && s.type !== 'disambiguation' && s.extract) {
-          summary = shortSummary(s.extract);
-          url = s.content_urls?.desktop?.page ?? `https://en.wikipedia.org/wiki/${page}`;
-        }
-      }
-    }
-    await db.from('title_descriptions').upsert({ title_id: t.id, summary, url, fetched_at: new Date().toISOString() });
-    return { status: 200, body: { summary: summary || null, url } };
-  } catch (e) {
-    if (cached) return { status: 200, body: cached }; // stale is better than nothing
-    return { status: e instanceof Busy ? 503 : 502, body: { error: e instanceof Busy ? 'catalogue_busy' : 'catalogue_error' } };
-  }
+  return await describeTitle(db, t);
 }
 
-Deno.serve(async (req) => {
+async function handle(req: Request, db: Db): Promise<Response> {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
   if (req.method !== 'POST') return json(405, { error: 'method_not_allowed' });
-  const db = admin();
   const token = (req.headers.get('authorization') ?? '').replace(/^Bearer /i, '');
   const { data: who, error: authError } = await db.auth.getUser(token);
   if (authError || !who.user) return json(401, { error: 'unauthorized' });
@@ -196,4 +157,13 @@ Deno.serve(async (req) => {
     return json(r.status, r.body);
   }
   return json(400, { error: 'bad_action' });
+}
+
+Deno.serve(async (req) => {
+  const db = admin();
+  try {
+    return await handle(req, db);
+  } finally {
+    await flushHealth(db); // how Wikidata, MusicBrainz and Wikipedia answered during this request
+  }
 });

@@ -66,7 +66,22 @@ MusicBrainz data is free, but MetaBrainz asks commercial users to support them f
 - English Wikipedia is read worldwide, so big Indian and US releases rank high. If we want a UK lean later, we can weight it.
 - News spikes count: an actor's death or an awards night can push an older film up for a few days.
 - ListenBrainz users lean towards keen music fans, so the albums list is less mainstream than a sales chart.
-- Running it by hand (for example after a fix): in the SQL editor, `select private.refresh_world_trending();` then check `net._http_response` a minute later.
+- Running it by hand (for example after a fix): in the SQL editor, `select private.refresh_world_trending('all');` (or `'describe'`, or `'retry'`), then check `net._http_response` a minute or two later.
+
+## Keeping within the free sources' limits
+
+Wikidata, Wikipedia and MusicBrainz limit how often we may ask, and our server shares its internet address with other Supabase customers, so MusicBrainz in particular often answers "busy". What keeps us within the limits:
+
+- **Search asks the outside sources sparingly.** Titles already on SofaClub are searched as you type. Wikidata and MusicBrainz are only asked once 3+ letters are typed and typing pauses, and only when SofaClub's own titles found fewer than 5 matches; otherwise there's a "More results" button (the keyboard's Search key does the same). Answers are cached for 7 days.
+- **Work is done overnight.** Every day the job builds the Trending lists at 05:17 UTC, fetches descriptions for every trending title at 05:47 and 06:17 (so the most-opened titles never ask Wikipedia live), and retries at 08:47 and 11:47 if the morning build didn't happen. Trending shows "Updated today/yesterday/N days ago", so a stalled list is visible.
+- **Busy answers are retried, then skipped.** A title whose source is busy is left for the next run; several busy answers in a row pause and then stop the run.
+- **Everything is counted.** `source_health` has one row per source per day: how many answers were ok, busy or failed. Check it with:
+
+  ```sql
+  select * from source_health order by day desc, source;
+  ```
+
+  If `busy` regularly exceeds about 10% of `ok` for Wikidata, add the Wikimedia token (above). For MusicBrainz, the options are supporting MetaBrainz for higher limits, or a local copy of their data. For films and TV, TMDB is the paid alternative.
 
 ## Testing
 

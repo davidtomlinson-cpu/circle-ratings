@@ -26,9 +26,12 @@ export default function Search() {
   const [q, setQ] = useState(typeof params.q === 'string' ? params.q.slice(0, 100) : '');
   const [cat, setCat] = useState<Cat | 'All'>(start ?? 'All');
   const [newCat, setNewCat] = useState<Cat>(start ?? 'Movies');
-  const [local, setLocal] = useState<Found[]>([]);
+  const [local, setLocal] = useState<{ key: string; rows: Found[] } | null>(null);
+  // Set when the person asks for outside results ("More results" or the keyboard's Search key).
+  const [more, setMore] = useState<string | null>(null);
   const [remote, setRemote] = useState<{ q: string; rows: Found[]; busy: string[] } | null>(null);
   const query = q.trim();
+  const key = `${query}|${cat}`;
   const seq = useRef(0);
 
   // Titles already on SofaClub: quick, so search as you type.
@@ -40,14 +43,21 @@ export default function Search() {
       .then(({ data }) => {
         if (!live || !data) return;
         learnTitles(data as Found[]);
-        setLocal(data as Found[]);
+        setLocal({ key: `${query}|${cat}`, rows: data as Found[] });
       });
     return () => { live = false; };
   }, [query, cat, learnTitles]);
 
+  // Ask the outside catalogue (Wikidata, MusicBrainz) only when it's worth it: they limit how often we may ask.
+  // Automatically once 3+ letters are typed, typing has paused, and SofaClub's own titles found fewer than 5;
+  // otherwise only when asked for ("More results" or the keyboard's Search key).
+  const localReady = local?.key === key;
+  const localCount = localReady ? local!.rows.length : 0;
+  const wantRemote = query.length >= 2 && (more === key || (query.length >= 3 && localReady && localCount < 5));
+
   // The outside catalogue: wait until typing pauses, and ignore answers to older searches.
   useEffect(() => {
-    if (query.length < 2) return;
+    if (!wantRemote) return;
     const mine = ++seq.current;
     const t = setTimeout(async () => {
       const { data, error } = await supabase.functions.invoke('catalogue', {
@@ -58,15 +68,17 @@ export default function Search() {
       const rows = d?.results ?? [];
       learnTitles(rows);
       setRemote({ q: `${query}|${cat}`, rows, busy: error ? ['wikidata', 'musicbrainz'] : d?.busy ?? [] });
-    }, 450);
+    }, more === key ? 0 : 700);
     return () => clearTimeout(t);
-  }, [query, cat, learnTitles]);
+  }, [wantRemote, query, cat, key, more, learnTitles]);
 
   const searching = query.length >= 2;
-  const done = remote?.q === `${query}|${cat}`;
+  const done = remote?.q === key;
+  // Finished = outside results are in, or SofaClub's own titles answered and we're not fetching more.
+  const settled = done || (localReady && !wantRemote);
   const seen = new Set<string>();
   const results = searching
-    ? [...local, ...(done ? remote!.rows : [])].filter((r) => (seen.has(r.key) ? false : (seen.add(r.key), true))).slice(0, 40)
+    ? [...(localReady ? local!.rows : []), ...(done ? remote!.rows : [])].filter((r) => (seen.has(r.key) ? false : (seen.add(r.key), true))).slice(0, 40)
     : [];
   const busy = done ? remote!.busy : [];
 
@@ -82,16 +94,17 @@ export default function Search() {
           placeholder="Search films, TV, books, albums"
           placeholderTextColor={color.n500}
           returnKeyType="search"
+          onSubmitEditing={() => query.length >= 2 && setMore(key)}
           style={{ flex: 1, color: c.text, fontFamily: 'Figtree_400Regular', ...({ outlineWidth: 0 } as object), fontSize: 15, height: '100%' }}
         />
-        {searching && !done && <ActivityIndicator size="small" color={color.n400} />}
+        {searching && !settled && <ActivityIndicator size="small" color={color.n400} />}
       </Row>
       <ChipRow>
         {(['All', ...CATS] as const).map((x) => <Chip key={x} label={x === 'All' ? 'All' : KIND[x].short} on={cat === x} onPress={() => { setCat(x); if (x !== 'All') setNewCat(x); }} />)}
       </ChipRow>
 
       {searching ? (
-        <SectionLabel>{done ? `${results.length} ${results.length === 1 ? 'result' : 'results'}` : 'Searching…'}</SectionLabel>
+        <SectionLabel>{settled ? `${results.length} ${results.length === 1 ? 'result' : 'results'}` : 'Searching…'}</SectionLabel>
       ) : (
         <SectionLabel>{query.length ? 'Type 2 or more letters' : 'Not in the Top 50 · try these'}</SectionLabel>
       )}
@@ -108,7 +121,11 @@ export default function Search() {
         ))}
       </View>
 
-      {searching && done && (
+      {searching && settled && !done && (
+        <Btn small kind="secondary" label="More results" onPress={() => setMore(key)} />
+      )}
+
+      {searching && settled && (
         <View style={{ gap: 10, backgroundColor: color.n800, borderRadius: 24, padding: 16 }}>
           <T size={14} weight="bold">Can’t find it? Add “{query}” yourself</T>
           <ChipRow>

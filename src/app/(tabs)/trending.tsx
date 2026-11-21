@@ -8,7 +8,7 @@ import { Card, Chip, ChipRow, Disc, H, HeartPill, ListRow, Page, Row, SectionLab
 import type { Cat } from '../../data/types';
 import { item } from '../../data/model';
 import { movement, useTrending } from '../../lib/useTrending';
-import { releasedLine, useWorldTrending, worldMovement, worldScore } from '../../lib/useWorldTrending';
+import { releasedLine, updatedLine, useWorldTrending, worldMovement, worldScore } from '../../lib/useWorldTrending';
 import { useApp } from '../../state/store';
 import { c, color } from '../../theme';
 
@@ -105,7 +105,7 @@ export default function Trending() {
         ))}
       </View>
 
-      <T size={11} color={c.textMuted} center>{t.source}</T>
+      <T size={11} color={c.textMuted} center>{[t.source, updatedLine(world.updatedAt)].filter(Boolean).join(' ')}{world.updatedAt ? '.' : ''}</T>
     </Page>
   );
 }

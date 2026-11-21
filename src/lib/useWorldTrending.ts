@@ -16,6 +16,7 @@ export type WorldRow = {
 export function useWorldTrending(cat: Cat | 'All' = 'All', limit = 30, inCinemas = false) {
   const learnTitles = useApp((s) => s.learnTitles);
   const [rows, setRows] = useState<WorldRow[]>([]);
+  const [updatedAt, setUpdatedAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
@@ -25,13 +26,14 @@ export function useWorldTrending(cat: Cat | 'All' = 'All', limit = 30, inCinemas
     setLoading(false);
     setError(!!e);
     if (!data) return;
-    const list = data as (Omit<TitleRow, 'source'> & { rank: number; previous_rank: number | null; score: number; source: WorldRow['source']; release_date: string | null })[];
+    const list = data as (Omit<TitleRow, 'source'> & { rank: number; previous_rank: number | null; score: number; source: WorldRow['source']; release_date: string | null; updated_at: string })[];
     learnTitles(list.map((r) => ({ id: r.id, key: r.key, category: r.category, title: r.title, creator: r.creator, year: r.year, source: r.key.includes(':') ? 'catalogue' : 'static' })));
+    setUpdatedAt(list.reduce<string | null>((a, r) => (!a || r.updated_at > a ? r.updated_at : a), null));
     setRows(list.map((r) => ({ key: r.key, rank: r.rank, previousRank: r.previous_rank, score: Number(r.score), source: r.source, releaseDate: r.release_date })));
   }, [cat, limit, inCinemas, learnTitles]);
 
   useFocusEffect(useCallback(() => { void load(); }, [load]));
-  return { rows, loading, error, reload: load };
+  return { rows, updatedAt, loading, error, reload: load };
 }
 
 /** "NEW" if it wasn't on yesterday's list, otherwise places moved since then. */
@@ -51,3 +53,11 @@ export const worldScore = (r: WorldRow) =>
 /** "Out since 13 Nov" for the cinema list. */
 export const releasedLine = (r: WorldRow) =>
   r.releaseDate ? `Out since ${new Date(`${r.releaseDate}T12:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}` : 'In cinemas now';
+
+/** "Updated today", "Updated yesterday", "Updated 3 days ago": so a list that has stopped refreshing shows it. */
+export function updatedLine(iso: string | null, now = new Date()): string {
+  if (!iso) return '';
+  const day = (d: Date) => Date.UTC(d.getFullYear(), d.getMonth(), d.getDate());
+  const days = Math.round((day(now) - day(new Date(iso))) / 86400000);
+  return days <= 0 ? 'Updated today' : days === 1 ? 'Updated yesterday' : `Updated ${days} days ago`;
+}

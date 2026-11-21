@@ -6,9 +6,13 @@
 //   played them (so a few superfans can't fill the chart), kept only if MusicBrainz says they're studio albums.
 // Titles are saved in `titles` (like a catalogue add), then each category's list is replaced in one go.
 // If a source is busy or fails, that category keeps yesterday's list.
+// Tasks (POST body {task}): 'all' builds the lists (05:17 UTC); 'describe' fetches descriptions for trending
+// titles that lack a fresh one, so they open instantly (05:47); 'retry' redoes 'all' only if the lists weren't
+// updated in the last 20 hours (08:47 and 11:47).
 import { type Category, type Found, fromMusicBrainz, type MbReleaseGroup, WD_TYPES } from '../_shared/catalogue.ts';
 import { admin } from '../_shared/admin.ts';
-import { fetchJson, mb, sleep, sparql, UA, wdRows } from '../_shared/sources.ts';
+import { type DescTitle, fetchDescriptions, isFresh } from '../_shared/descriptions.ts';
+import { fetchJson, flushHealth, mb, sleep, sparql, UA, wdRows } from '../_shared/sources.ts';
 import {
   type FilmDate, inCinemas, ukRelease,
   estimateListeners, lastDays, type ListenRow, mergeListens, type Popularity, sumWikiViews, topPerCategory, type WikiTopDay,
@@ -169,13 +173,8 @@ async function replace(
   return data as number;
 }
 
-Deno.serve(async (req) => {
-  const db = admin();
-  // Only the daily database job may run this: it sends a secret that only the database knows.
-  const { data: ok } = await db.rpc('check_trending_secret', { p_secret: req.headers.get('x-cron-secret') ?? '' });
-  if (ok !== true) return new Response('forbidden', { status: 403 });
-
-  const report: Record<string, string | number> = { ua: UA };
+/** Build all the lists (the 05:17 run). */
+async function refreshAll(db: Db, report: Record<string, string | number>) {
   const jobs: [string, () => Promise<void>][] = [
     ['wikipedia', async () => {
       const rows = topPerCategory(await fromWikipedia(), KEEP);
@@ -208,6 +207,61 @@ Deno.serve(async (req) => {
       report[name] = `failed, kept yesterday's lists: ${String(e)}`;
       console.error('trending-refresh', name, String(e));
     }
+  }
+}
+
+/** Descriptions for trending titles that lack a fresh one (the 05:47 run). Stops before the time limit. */
+async function describeTrending(db: Db, report: Record<string, string | number>) {
+  const { data: rows } = await db.from('world_trending')
+    .select('rank, titles!inner(id, wikidata_id, musicbrainz_id, title_descriptions(summary, fetched_at))')
+    .order('rank');
+  type Row = { titles: DescTitle & { title_descriptions: { summary: string; fetched_at: string } | { summary: string; fetched_at: string }[] | null } };
+  const seen = new Set<number>();
+  const todo = ((rows ?? []) as unknown as Row[])
+    .map((r) => r.titles)
+    .filter((t) => {
+      if (seen.has(t.id)) return false;
+      seen.add(t.id);
+      const d = Array.isArray(t.title_descriptions) ? t.title_descriptions[0] : t.title_descriptions;
+      return !isFresh(d);
+    })
+    // Films, TV and books first (cheap), albums after (MusicBrainz is about one request a second).
+    .sort((a, b) => Number(!a.wikidata_id) - Number(!b.wikidata_id))
+    .map(({ id, wikidata_id, musicbrainz_id }) => ({ id, wikidata_id, musicbrainz_id }));
+  report.needed = todo.length;
+  try {
+    report.described = await fetchDescriptions(db, todo, Date.now() + 120_000);
+  } catch (e) {
+    report.described = `stopped early: ${String(e)}`;
+  }
+}
+
+/** Only redo the lists if the morning run didn't update them (the 08:47 and 11:47 runs). */
+async function retryIfStale(db: Db, report: Record<string, string | number>) {
+  const { data } = await db.from('world_trending').select('category, updated_at');
+  const newest = new Map<string, number>();
+  for (const r of data ?? []) newest.set(r.category, Math.max(newest.get(r.category) ?? 0, Date.parse(r.updated_at)));
+  const cutoff = Date.now() - 20 * 3600_000;
+  const stale = ['Movies', 'TV shows', 'Books', 'Albums'].filter((c) => (newest.get(c) ?? 0) < cutoff);
+  if (!stale.length) { report.retry = 'not needed: lists are up to date'; return; }
+  report.retry = `stale: ${stale.join(', ')}`;
+  await refreshAll(db, report);
+}
+
+Deno.serve(async (req) => {
+  const db = admin();
+  // Only the daily database job may run this: it sends a secret that only the database knows.
+  const { data: ok } = await db.rpc('check_trending_secret', { p_secret: req.headers.get('x-cron-secret') ?? '' });
+  if (ok !== true) return new Response('forbidden', { status: 403 });
+  const task = ((await req.json().catch(() => ({}))) as { task?: string }).task ?? 'all';
+
+  const report: Record<string, string | number> = { ua: UA, task };
+  try {
+    if (task === 'describe') await describeTrending(db, report);
+    else if (task === 'retry') await retryIfStale(db, report);
+    else await refreshAll(db, report);
+  } finally {
+    await flushHealth(db);
   }
   console.log('trending-refresh', JSON.stringify(report));
   return new Response(JSON.stringify(report), { headers: { 'Content-Type': 'application/json' } });
