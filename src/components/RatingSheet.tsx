@@ -4,7 +4,7 @@ import { Animated, Easing, Pressable, StyleSheet, View, type GestureResponderEve
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { HEART_WORDS, item } from '../data/model';
-import { jarCost, jarLeft, useApp } from '../state/store';
+import { useApp } from '../state/store';
 import { alpha, c, color, radius } from '../theme';
 import { HEART_PATH } from './Icon';
 import { Btn, Disc, H, Row, T } from './ui';
@@ -31,15 +31,8 @@ export function RatingSheet() {
   if (!mounted) return null;
 
   const it = item(key, s.custom);
-  const left = jarLeft(s);
-  const cost = jarCost(s, key, val);
-  const over = cost > left;
   const fromWatchlist = !!s.want[key];
-  const label = !val
-    ? 'Pick your hearts'
-    : over
-      ? `Only ${left} hearts left this month`
-      : `Use ${cost} ${cost === 1 ? 'heart' : 'hearts'} · ${left - cost} left`;
+  const label = !val ? 'Pick your hearts' : s.my[key] ? 'Update rating' : 'Save rating';
   const note = fromWatchlist && s.settings.contribute
     ? 'Shared with your circle. A 5 ♥ for something just finished from your watchlist also joins Loved worldwide.'
     : fromWatchlist
@@ -96,7 +89,7 @@ export function RatingSheet() {
 
         <H size={20} color={color.a300} center>{HEART_WORDS[val]}</H>
         <T size={12} color={c.textSoft} center>{note}</T>
-        <Btn label={label} disabled={!val || over} onPress={s.saveRating} />
+        <Btn label={label} disabled={!val} onPress={s.saveRating} />
       </Animated.View>
     </View>
   );

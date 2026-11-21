@@ -12,16 +12,6 @@ export const KIND: Record<Cat, { kind: string; bg: string; fg: string; verb: str
 
 export type Custom = Record<string, { title: string; by: string; year: string; cat: Cat }>;
 
-/** FNV-1a, so mock numbers are stable between launches. */
-export function hash(s: string) {
-  let h = 2166136261;
-  for (let i = 0; i < s.length; i++) {
-    h ^= s.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  return h >>> 0;
-}
-
 /** Keys whose details ship with the app (Top 50 and the extra list). */
 export const isStaticKey = (key: string) => /^(Movies|TV shows|Books|Albums|E)#\d+$/.test(key);
 
@@ -62,7 +52,6 @@ export function top50Keys(cat: Cat) {
 export const ALL_TOP_KEYS = CATS.flatMap(top50Keys);
 export const EXTRA_KEYS = CATALOGUE.extra.map((_, i) => `E#${i}`);
 
-export const BUDGET = 60;
 export const HEART_WORDS = ['Slide across the hearts', 'Not for me', 'It was OK', 'Liked it', 'Really liked it', 'Loved it'];
 
 export function ago(t: number, now = Date.now()) {
@@ -78,6 +67,4 @@ export function joinNames(n: string[]) {
   return `${n.slice(0, 3).join(', ')} and ${n.length - 3} more`;
 }
 
-export const monthStart = (d = new Date()) => new Date(d.getFullYear(), d.getMonth(), 1).getTime();
-export const nextMonth = (d = new Date()) => new Date(d.getFullYear(), d.getMonth() + 1, 1);
 export const fmtDay = (d: Date) => d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });

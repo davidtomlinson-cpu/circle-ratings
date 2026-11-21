@@ -7,7 +7,7 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { identify } from '../lib/billing';
 import { friendlyError, supabase } from '../lib/supabase';
-import { BUDGET, isStaticKey, monthStart, type Custom } from '../data/model';
+import { isStaticKey, type Custom } from '../data/model';
 import type { Cat } from '../data/types';
 
 export type Visibility = 'all' | 'some' | 'locked';
@@ -317,7 +317,7 @@ export const useApp = create<State>()(
         saveRating: () => {
           const s = get();
           const { key, val } = s.sheet;
-          if (!val || jarCost(s, key, val) > jarLeft(s)) return;
+          if (!val) return;
           const id = tid(key);
           if (!id) return s.showError('This title isn’t synced yet. Try again in a moment.');
           const undo = { my: s.my, rAt: s.rAt, want: s.want, fresh: s.fresh };
@@ -430,23 +430,6 @@ function toMembers(rows: OverviewRow[] | null): Member[] {
 }
 
 // ---- Derived values -------------------------------------------------------
-
-type JarInput = Pick<UserData, 'my' | 'rAt'>;
-
-/** Hearts spent this calendar month. Mirrors the server rule in ratings_before(). */
-export function jarSpent(s: JarInput, now = new Date()) {
-  const m = monthStart(now);
-  return Object.keys(s.my)
-    .filter((k) => (s.rAt[k] ?? 0) >= m)
-    .reduce((a, k) => a + s.my[k], 0);
-}
-export const jarLeft = (s: JarInput, now = new Date()) => Math.max(0, BUDGET - jarSpent(s, now));
-
-/** New rating costs its hearts; raising a rating made this month costs the difference. */
-export function jarCost(s: JarInput, key: string, val: number, now = new Date()) {
-  const old = (s.rAt[key] ?? 0) >= monthStart(now) ? (s.my[key] ?? 0) : 0;
-  return Math.max(0, val - old);
-}
 
 /** Names of circle members who can see my list and get rating notifications. */
 export function viewers(s: Pick<UserData, 'vis' | 'grants' | 'circle'>) {

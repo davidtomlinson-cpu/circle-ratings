@@ -95,7 +95,6 @@ export default function RootLayout() {
           <Stack.Protected guard={signedIn && paid} redirectTo={signedIn ? '/plans' : '/welcome'}>
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="title/[key]" />
-            <Stack.Screen name="jar" />
             <Stack.Screen name="notifications" />
             <Stack.Screen name="search" />
             <Stack.Screen name="privacy" />

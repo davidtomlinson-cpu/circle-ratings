@@ -26,7 +26,6 @@ if (Platform.OS !== 'web') {
 /** Turn a Supabase/Postgres error into a sentence we can show. */
 export function friendlyError(e: { message?: string; hint?: string; code?: string } | null | undefined) {
   if (!e) return '';
-  if (e.hint === 'heart_budget' || e.message?.includes('Not enough hearts')) return 'Not enough hearts left this month.';
   if (e.hint === 'subscription_required') return 'Your plan has ended. Choose a plan to keep rating.';
   if (e.message?.includes('Invalid login credentials')) return 'That email and password don’t match.';
   if (e.message?.includes('User already registered')) return 'There’s already an account with that email. Try signing in.';

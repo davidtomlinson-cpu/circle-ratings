@@ -36,7 +36,7 @@ The app can't break the rules below, because the database itself enforces them (
   - Your watchlist is visible only to you.
   - Your ratings are visible to you, and to your circle only when your list visibility allows it ("all", "some" with a per-person grant, or "locked").
   - Comments are visible to the author's circle.
-- **Heart budget:** 60 hearts a month, with the month counted on UK time. Re-rating something you rated this month costs the difference. The database refuses a rating that goes over budget.
+- **No rating limit:** rate as many titles as you like. (An earlier monthly "jar of hearts" budget was removed on 21 Nov 2026.)
 - **Loved worldwide:**
   - Only a 5 ♥ for a title that was on your watchlist counts. The database sets that flag, not the app.
   - Votes are stored as a salted hash, never your user id.
@@ -70,7 +70,7 @@ The app can't break the rules below, because the database itself enforces them (
   - **Trial-ending page.**
   - Account deletion warns a paying user to cancel in the store first.
 - **Search & add:** real search across films, TV, books and albums. Results already on SofaClub show instantly, then the outside databases. Picking a result saves it on the server, so watchlists, ratings and comments work the same as for Top 50 titles. You can still add something yourself if it isn't found.
-- **Pages:** Jar of hearts, Privacy, and Profile & settings (name, privacy, notification preferences, sign out).
+- **Pages:** Privacy, and Profile & settings (name, privacy, notification preferences, sign out).
 - **Circle:**
   - **Invite:** your personal code, with Share, Copy and Make a new code, plus a "Have a code?" box.
   - **Join a circle:** opens from `sofaclub://join/CODE`. It works signed out too: the code is remembered through sign-up.
@@ -116,7 +116,7 @@ Tested end to end against the live project:
 
 ```
 src/app/            routes (Expo Router). (tabs)/ = bottom tabs; other files slide in from the right
-src/components/     ui.tsx (text, buttons, chips, rows), Icon, Logo, Jar, RatingSheet, Toast, TitleRow
+src/components/     ui.tsx (text, buttons, chips, rows), Icon, Logo, RatingSheet, Toast, TitleRow
 src/data/           built-in Top 50 titles (from the prototype), model helpers, category tabs
 src/state/store.ts  local copy of the user's server data, optimistic writes with rollback
 src/lib/            Supabase client, billing (RevenueCat), invites, worldwide and trending hooks

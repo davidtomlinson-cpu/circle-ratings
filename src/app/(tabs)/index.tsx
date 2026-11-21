@@ -1,16 +1,14 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Pressable, View } from 'react-native';
-import { Jar } from '../../components/Jar';
 import { Icon, type IconName } from '../../components/Icon';
 import { RateBtn, TitleRow } from '../../components/TitleRow';
 import { Card, Disc, H, HeartGlyph, Page, Row, RoundIcon, SectionLabel, T, ChipRow } from '../../components/ui';
-import { BUDGET, fmtDay, nextMonth } from '../../data/model';
 import { notifText, type Notif } from '../../lib/notifications';
 import { supabase } from '../../lib/supabase';
 import { useTrending } from '../../lib/useTrending';
 import { useWorldwide } from '../../lib/useWorldwide';
-import { jarLeft, useApp, useMe, useTitles, wantKeys } from '../../state/store';
+import { useApp, useMe, useTitles, wantKeys } from '../../state/store';
 import { c, color } from '../../theme';
 
 const VIS_LABEL = { all: 'All my contacts', some: 'Chosen contacts', locked: 'Locked' } as const;
@@ -28,7 +26,6 @@ export default function Today() {
   const s = useApp();
   const want = wantKeys(s);
   const rated = Object.keys(s.my).length;
-  const left = jarLeft(s);
   const me = useMe();
   const loved = useWorldwide('All', true, 3);
   const trending = useTrending('All', 3);
@@ -68,12 +65,6 @@ export default function Today() {
           <ActionChip icon="settings" label="Settings" href="/profile" />
         </ChipRow>
       </Card>
-
-      <Pressable onPress={() => router.push('/jar')} style={{ alignItems: 'center', gap: 6 }}>
-        <Jar left={left} scale={0.6} />
-        <T size={14} center><H size={22}>{left}</H> of {BUDGET} hearts left this month</T>
-        <T size={12} color={c.textMuted} center>Each rating uses its hearts · refills on {fmtDay(nextMonth())}</T>
-      </Pressable>
 
       <Card onPress={() => router.push(s.circle.length ? '/notifications' : '/invite')}>
         <Row>
