@@ -1,6 +1,6 @@
 // Run: node --experimental-strip-types supabase/functions/_shared/test/trending.test.ts
 import assert from 'node:assert/strict';
-import { estimateListeners, lastDays, mergeListens, sumWikiViews, topPerCategory } from '../trending.ts';
+import { estimateListeners, inCinemas, lastDays, mergeListens, sumWikiViews, topPerCategory, ukRelease } from '../trending.ts';
 
 let n = 0;
 const t = (name: string, fn: () => void) => { fn(); n++; console.log('ok', name); };
@@ -47,6 +47,27 @@ t('albums are ranked by estimated listeners, not raw plays', () => {
     ],
   );
   assert.deepEqual(out, [{ mbid: 'broad', listeners: 185 }, { mbid: 'brand-new', listeners: 37 }, { mbid: 'superfans', listeners: 26 }]);
+});
+
+t('UK release date: UK first, then US, ignoring festivals and other countries', () => {
+  assert.equal(ukRelease([
+    { date: '+2026-09-06T00:00:00Z', place: 'Q_telluride' },
+    { date: '+2026-10-16T00:00:00Z', place: 'Q30' },
+    { date: '+2026-11-20T00:00:00Z', place: 'Q145' },
+  ]), '2026-11-20');
+  assert.equal(ukRelease([{ date: '+2026-12-18T00:00:00Z', place: 'Q30' }, { date: '+2026-12-17T00:00:00Z', place: 'Q213' }]), '2026-12-18');
+  assert.equal(ukRelease([{ date: '+2026-11-13T00:00:00Z', place: null }, { date: '+2026-12-01T00:00:00Z', place: null }]), '2026-11-13');
+  assert.equal(ukRelease([{ date: '+2026-11-13T00:00:00Z', place: 'Q183' }]), null); // only Germany: can't tell
+});
+
+t('in cinemas: out in the last 8 weeks, not in the future', () => {
+  const now = new Date('2026-11-21T10:00:00Z');
+  assert.equal(inCinemas('2026-11-20', now), true);
+  assert.equal(inCinemas('2026-11-21', now), true);
+  assert.equal(inCinemas('2026-10-23', now), true);
+  assert.equal(inCinemas('2026-12-18', now), false); // not out yet
+  assert.equal(inCinemas('2026-07-17', now), false); // long gone
+  assert.equal(inCinemas(null, now), false);
 });
 
 console.log(`${n} passed`);

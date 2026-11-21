@@ -1,6 +1,7 @@
 // Builds "Trending this week" from outside the app, once a day (pg_cron → pg_net → here).
 //   Films, TV and books: the most-read English Wikipedia articles over the last 7 days, kept only if
-//   Wikidata says they're a film, series or book.
+//   Wikidata says they're a film, series or book. Films out in UK cinemas in the last 8 weeks (and not
+//   distributed by a streaming service) are also marked "in cinemas".
 //   Albums: ListenBrainz's most-played albums this week, re-ranked by an estimate of how many different people
 //   played them (so a few superfans can't fill the chart), kept only if MusicBrainz says they're studio albums.
 // Titles are saved in `titles` (like a catalogue add), then each category's list is replaced in one go.
@@ -9,6 +10,7 @@ import { type Category, type Found, fromMusicBrainz, type MbReleaseGroup, WD_TYP
 import { admin } from '../_shared/admin.ts';
 import { fetchJson, mb, sleep, sparql, UA, wdRows } from '../_shared/sources.ts';
 import {
+  type FilmDate, inCinemas, ukRelease,
   estimateListeners, lastDays, type ListenRow, mergeListens, type Popularity, sumWikiViews, topPerCategory, type WikiTopDay,
 } from '../_shared/trending.ts';
 
@@ -53,6 +55,38 @@ async function fromWikipedia(): Promise<Ranked[]> {
     await sleep(1500);
   }
   return rows.map((f) => ({ ...f, score: views.get(f.wikidata_id!) ?? 0 })).sort((a, b) => b.score - a.score);
+}
+
+// ---- In cinemas -----------------------------------------------------------------
+
+type Cinema = { inCinemas: boolean; release: string | null };
+
+/** For trending films: UK release date, and whether they're in cinemas now (not streaming-only). */
+async function cinemaInfo(ids: string[]): Promise<Map<string, Cinema>> {
+  const out = new Map<string, Cinema>();
+  if (!ids.length) return out;
+  const values = ids.map((q) => `wd:${q}`).join(' ');
+  const dates = await sparql(
+    `SELECT ?item ?date ?place WHERE { VALUES ?item { ${values} } ?item p:P577 ?st. ?st ps:P577 ?date. OPTIONAL { ?st pq:P291 ?place } }`,
+  );
+  await sleep(1000);
+  // Distributed by a video streaming service or video-on-demand service (Netflix, Apple TV, Disney+ ...).
+  const streamed = await sparql(
+    `SELECT DISTINCT ?item WHERE { VALUES ?item { ${values} } ?item wdt:P750 ?d. ?d wdt:P31 ?t. VALUES ?t { wd:Q59152282 wd:Q723685 } }`,
+  );
+  const qid = (v: string) => v.split('/').pop()!;
+  const streaming = new Set(streamed.results.bindings.map((b) => qid(b.item.value)));
+  const byFilm = new Map<string, FilmDate[]>();
+  for (const b of dates.results.bindings) {
+    const id = qid(b.item.value);
+    if (!byFilm.has(id)) byFilm.set(id, []);
+    byFilm.get(id)!.push({ date: b.date.value, place: b.place ? qid(b.place.value) : null });
+  }
+  for (const id of ids) {
+    const release = ukRelease(byFilm.get(id) ?? []);
+    out.set(id, { release, inCinemas: !streaming.has(id) && inCinemas(release) });
+  }
+  return out;
 }
 
 // ---- Albums from ListenBrainz -------------------------------------------------
@@ -119,9 +153,14 @@ async function saveTitles(db: Db, rows: Ranked[]): Promise<Map<string, number>> 
   return have;
 }
 
-async function replace(db: Db, category: Category, source: 'wikipedia' | 'listenbrainz', rows: Ranked[], ids: Map<string, number>) {
+async function replace(
+  db: Db, category: Category, source: 'wikipedia' | 'listenbrainz', rows: Ranked[], ids: Map<string, number>, cinema = new Map<string, Cinema>(),
+) {
   const list = rows
-    .map((r) => ({ title_id: ids.get((r.wikidata_id ?? r.musicbrainz_id)!), score: r.score }))
+    .map((r) => {
+      const c = r.wikidata_id ? cinema.get(r.wikidata_id) : undefined;
+      return { title_id: ids.get((r.wikidata_id ?? r.musicbrainz_id)!), score: r.score, in_cinemas: c?.inCinemas ?? false, release_date: c?.release ?? null };
+    })
     .filter((r) => r.title_id)
     .slice(0, KEEP);
   if (list.length < 5) throw new Error(`${category}: only ${list.length} titles`);
@@ -141,9 +180,16 @@ Deno.serve(async (req) => {
     ['wikipedia', async () => {
       const rows = topPerCategory(await fromWikipedia(), KEEP);
       const ids = await saveTitles(db, rows);
+      let cinema = new Map<string, Cinema>();
+      try {
+        cinema = await cinemaInfo(rows.filter((r) => r.category === 'Movies').map((r) => r.wikidata_id!));
+        report.inCinemas = [...cinema.values()].filter((c) => c.inCinemas).length;
+      } catch (e) {
+        report.inCinemas = `skipped (${String(e)})`; // the film list still updates, just without the cinema marks
+      }
       for (const cat of ['Movies', 'TV shows', 'Books'] as const) {
         try {
-          report[cat] = await replace(db, cat, 'wikipedia', rows.filter((r) => r.category === cat), ids);
+          report[cat] = await replace(db, cat, 'wikipedia', rows.filter((r) => r.category === cat), ids, cinema);
         } catch (e) {
           report[cat] = `kept yesterday's list (${String(e)})`;
         }

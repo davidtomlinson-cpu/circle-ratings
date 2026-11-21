@@ -82,3 +82,33 @@ export function estimateListeners(weekly: { mbid: string; listens: number }[], p
     .filter((x) => x.listeners > 0)
     .sort((a, b) => b.listeners - a.listeners);
 }
+
+// ---- "In cinemas" -------------------------------------------------------------
+
+/** One Wikidata publication date (P577) for a film, with its place qualifier (P291) if any. */
+export type FilmDate = { date: string; place: string | null };
+
+const UK = 'Q145';
+const US = 'Q30';
+
+/**
+ * The film's UK cinema release date (YYYY-MM-DD), or null if we can't tell.
+ * Prefers a date marked United Kingdom, then United States (UK releases are usually close), then, if no
+ * date has a place at all, the earliest date. Dates tied to other places (festivals, other countries) are ignored.
+ */
+export function ukRelease(dates: FilmDate[]): string | null {
+  const day = (d: FilmDate) => d.date.replace(/^\+/, '').slice(0, 10);
+  const pick = (place: string) => dates.filter((d) => d.place === place).map(day).sort()[0] ?? null;
+  const uk = pick(UK) ?? pick(US);
+  if (uk) return uk;
+  if (dates.length && dates.every((d) => !d.place)) return dates.map(day).sort()[0];
+  return null;
+}
+
+/** "In cinemas" = released in the last 8 weeks, and not yet in the future. Streaming-only films are excluded elsewhere. */
+export function inCinemas(release: string | null, now = new Date(), weeks = 8): boolean {
+  if (!release || !/^\d{4}-\d{2}-\d{2}$/.test(release)) return false;
+  const t = Date.parse(`${release}T00:00:00Z`);
+  const today = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+  return t <= today && today - t <= weeks * 7 * 86400000;
+}

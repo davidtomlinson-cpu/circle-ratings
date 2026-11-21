@@ -4,13 +4,16 @@ import type { Cat } from '../data/types';
 import { useApp, type TitleRow } from '../state/store';
 import { supabase } from './supabase';
 
-export type WorldRow = { key: string; rank: number; previousRank: number | null; score: number; source: 'wikipedia' | 'listenbrainz' };
+export type WorldRow = {
+  key: string; rank: number; previousRank: number | null; score: number; source: 'wikipedia' | 'listenbrainz'; releaseDate: string | null;
+};
 
 /**
  * Trending in the wider world this week, refreshed daily on the server:
  * films, TV and books by English Wikipedia page views, albums by estimated ListenBrainz listeners.
  */
-export function useWorldTrending(cat: Cat | 'All' = 'All', limit = 30) {
+/** `inCinemas`: only trending films released in UK cinemas in the last 8 weeks (not streaming-only). */
+export function useWorldTrending(cat: Cat | 'All' = 'All', limit = 30, inCinemas = false) {
   const learnTitles = useApp((s) => s.learnTitles);
   const [rows, setRows] = useState<WorldRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -18,14 +21,14 @@ export function useWorldTrending(cat: Cat | 'All' = 'All', limit = 30) {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const { data, error: e } = await supabase.rpc('world_trending', { p_category: cat === 'All' ? null : cat, p_limit: limit });
+    const { data, error: e } = await supabase.rpc('world_trending', { p_category: cat === 'All' ? null : cat, p_limit: limit, p_in_cinemas: inCinemas });
     setLoading(false);
     setError(!!e);
     if (!data) return;
-    const list = data as (Omit<TitleRow, 'source'> & { rank: number; previous_rank: number | null; score: number; source: WorldRow['source'] })[];
+    const list = data as (Omit<TitleRow, 'source'> & { rank: number; previous_rank: number | null; score: number; source: WorldRow['source']; release_date: string | null })[];
     learnTitles(list.map((r) => ({ id: r.id, key: r.key, category: r.category, title: r.title, creator: r.creator, year: r.year, source: r.key.includes(':') ? 'catalogue' : 'static' })));
-    setRows(list.map((r) => ({ key: r.key, rank: r.rank, previousRank: r.previous_rank, score: Number(r.score), source: r.source })));
-  }, [cat, limit, learnTitles]);
+    setRows(list.map((r) => ({ key: r.key, rank: r.rank, previousRank: r.previous_rank, score: Number(r.score), source: r.source, releaseDate: r.release_date })));
+  }, [cat, limit, inCinemas, learnTitles]);
 
   useFocusEffect(useCallback(() => { void load(); }, [load]));
   return { rows, loading, error, reload: load };
@@ -44,3 +47,7 @@ const compact = (n: number) =>
 /** "1.2M Wikipedia views" or "about 640 listeners". */
 export const worldScore = (r: WorldRow) =>
   r.source === 'wikipedia' ? `${compact(r.score)} Wikipedia views` : `about ${compact(r.score)} listeners on ListenBrainz`;
+
+/** "Out since 13 Nov" for the cinema list. */
+export const releasedLine = (r: WorldRow) =>
+  r.releaseDate ? `Out since ${new Date(`${r.releaseDate}T12:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}` : 'In cinemas now';
