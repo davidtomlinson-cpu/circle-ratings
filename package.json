@@ -43,7 +43,7 @@
     "typecheck": "tsc --noEmit",
     "test:billing": "node --experimental-strip-types --no-warnings supabase/functions/_shared/test/revenuecat.test.ts",
     "lint": "expo lint",
-    "test:catalogue": "node --experimental-strip-types --no-warnings supabase/functions/_shared/test/catalogue.test.ts",
+    "test:catalogue": "node --experimental-strip-types --no-warnings supabase/functions/_shared/test/catalogue.test.ts && node --experimental-strip-types --no-warnings supabase/functions/_shared/test/trending.test.ts",
     "update:preview": "npx eas-cli@latest update --channel preview --environment preview",
     "update:production": "npx eas-cli@latest update --channel production --environment production"
   },

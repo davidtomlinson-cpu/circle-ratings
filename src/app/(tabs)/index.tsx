@@ -7,6 +7,7 @@ import { Card, Disc, H, HeartGlyph, Page, Row, RoundIcon, SectionLabel, T, ChipR
 import { notifText, type Notif } from '../../lib/notifications';
 import { supabase } from '../../lib/supabase';
 import { useTrending } from '../../lib/useTrending';
+import { useWorldTrending, worldScore } from '../../lib/useWorldTrending';
 import { useWorldwide } from '../../lib/useWorldwide';
 import { useApp, useMe, useTitles, wantKeys } from '../../state/store';
 import { c, color } from '../../theme';
@@ -29,6 +30,7 @@ export default function Today() {
   const me = useMe();
   const loved = useWorldwide('All', true, 3);
   const trending = useTrending('All', 3);
+  const world = useWorldTrending('All', 3);
   const [latest, setLatest] = useState<Notif | null>(null);
   useTitles([latest?.title_key, ...s.circle.map((m) => m.topKey)]);
   useFocusEffect(
@@ -97,8 +99,10 @@ export default function Today() {
 
       <Card bg={color.a700} onPress={() => router.push('/trending')} style={{ gap: 8 }}>
         <Row><Icon name="sparkles" size={18} /><T size={14} weight="bold" style={{ flex: 1 }}>Trending this week</T><Icon name="chevronRight" size={18} /></Row>
-        {trending.rows.slice(0, 3).map((r, i) => <TitleRow key={r.key} k={r.key} disc={<Disc size={32} bg={c.primary} fg={c.text} label={String(i + 1)} />} sub={`${r.people} people this week`} action={<View />} />)}
-        {!trending.loading && !trending.rows.length && <T size={13} color={color.a100}>What people on SofaClub are rating and adding. Titles appear once 3 people have.</T>}
+        {trending.rows.length
+          ? trending.rows.slice(0, 3).map((r, i) => <TitleRow key={r.key} k={r.key} disc={<Disc size={32} bg={c.primary} fg={c.text} label={String(i + 1)} />} sub={`${r.people} people on SofaClub`} action={<View />} />)
+          : world.rows.slice(0, 3).map((r, i) => <TitleRow key={r.key} k={r.key} disc={<Disc size={32} bg={c.primary} fg={c.text} label={String(i + 1)} />} sub={worldScore(r)} action={<View />} />)}
+        {!trending.loading && !world.loading && !trending.rows.length && !world.rows.length && <T size={13} color={color.a100}>What people are watching, reading and listening to this week.</T>}
       </Card>
 
       <Card onPress={() => router.push('/world')} style={{ gap: 8 }}>

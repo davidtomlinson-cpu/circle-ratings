@@ -5,10 +5,11 @@
 // Titles are only ever written here, with the service role, after re-reading them at the source:
 // the app can't invent or alter catalogue entries.
 import {
-  type Category, type Found, fromMusicBrainz, fromWikidata, mbQuery, type MbReleaseGroup, normaliseQuery, parseKey,
-  rankAlbums, rankByPopularity, type Source, type WdEntity, wdCreatorIds,
+  type Category, type Found, fromMusicBrainz, mbQuery, type MbReleaseGroup, normaliseQuery, parseKey,
+  rankAlbums, rankByPopularity, type Source,
 } from '../_shared/catalogue.ts';
 import { admin } from '../_shared/admin.ts';
+import { Busy, mb, wd, wdRows } from '../_shared/sources.ts';
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -17,61 +18,9 @@ const cors = {
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { ...cors, 'Content-Type': 'application/json' } });
 
-// Both sources ask for an identifying User-Agent with a way to contact us. Set CATALOGUE_CONTACT
-// (a support email or web page) as a function secret before launch.
-const UA = `SofaClub/1.0 (${Deno.env.get('CATALOGUE_CONTACT') || 'catalogue lookups'})`;
-// Optional Wikimedia OAuth 2.0 access token: signed requests get much higher rate limits.
-const WM_TOKEN = Deno.env.get('WIKIMEDIA_TOKEN') ?? '';
 const CACHE_DAYS = 7;
 const MAX = 15;
 const CATS: Category[] = ['Movies', 'TV shows', 'Books', 'Albums'];
-
-class Busy extends Error {}
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
-async function fetchJson(url: string, headers: Record<string, string> = {}, tries = 3): Promise<unknown> {
-  for (let i = 0; i < tries; i++) {
-    const r = await fetch(url, { headers: { 'User-Agent': UA, Accept: 'application/json', ...headers } });
-    if (r.ok) return r.json();
-    // 429 (Wikimedia) and 503 (MusicBrainz) mean "slow down": wait a little and try again.
-    if (r.status === 429 || r.status === 503) {
-      await r.body?.cancel();
-      if (i < tries - 1) { await sleep(1200 * (i + 1)); continue; }
-      throw new Busy(`${new URL(url).host} is busy`);
-    }
-    throw new Error(`${new URL(url).host} answered ${r.status}`);
-  }
-  throw new Busy('busy');
-}
-
-// ---- Wikidata ---------------------------------------------------------------
-
-async function wd(params: Record<string, string>) {
-  const r = (await fetchJson(
-    'https://www.wikidata.org/w/api.php?' + new URLSearchParams({ ...params, format: 'json', formatversion: '2' }),
-    WM_TOKEN ? { Authorization: `Bearer ${WM_TOKEN}` } : {},
-  )) as { error?: { code?: string } };
-  // Wikidata sometimes refuses inside a normal 200 answer (rate limited, server lag). Treat that as busy,
-  // never as "no results", or we'd cache an empty answer for a week.
-  if (r.error) throw new Busy(`wikidata: ${r.error.code ?? 'error'}`);
-  return r;
-}
-
-async function wdEntities(ids: string[], props: string): Promise<Record<string, WdEntity>> {
-  if (!ids.length) return {};
-  const r = (await wd({ action: 'wbgetentities', ids: ids.slice(0, 50).join('|'), props, languages: 'en|en-gb|mul' })) as {
-    entities?: Record<string, WdEntity>;
-  };
-  return r.entities ?? {};
-}
-
-async function wdRows(ids: string[]): Promise<Found[]> {
-  const ents = await wdEntities(ids, 'labels|claims|sitelinks');
-  const people = [...new Set(Object.values(ents).flatMap(wdCreatorIds))];
-  const pe = await wdEntities(people, 'labels');
-  const names = Object.fromEntries(Object.entries(pe).map(([k, e]) => [k, e.labels?.en?.value ?? e.labels?.mul?.value ?? '']));
-  return ids.map((id) => ents[id] && fromWikidata(ents[id], names)).filter((x): x is Found => !!x);
-}
 
 async function searchWikidata(q: string): Promise<Found[]> {
   const r = (await wd({ action: 'wbsearchentities', search: q, language: 'en', uselang: 'en', type: 'item', limit: '30' })) as {
@@ -80,10 +29,6 @@ async function searchWikidata(q: string): Promise<Found[]> {
   const ids = (r.search ?? []).map((x) => x.id);
   return rankByPopularity(await wdRows(ids)).slice(0, MAX);
 }
-
-// ---- MusicBrainz ------------------------------------------------------------
-
-const mb = (path: string) => fetchJson(`https://musicbrainz.org/ws/2/${path}${path.includes('?') ? '&' : '?'}fmt=json`);
 
 async function searchMusicBrainz(q: string): Promise<Found[]> {
   const r = (await mb(`release-group/?query=${encodeURIComponent(mbQuery(q))}&limit=40`)) as { 'release-groups'?: MbReleaseGroup[] };
