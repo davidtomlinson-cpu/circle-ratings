@@ -20,10 +20,10 @@ export default function Search() {
   const addCustom = useApp((s) => s.addCustom);
   const custom = useApp((s) => s.custom);
   const learnTitles = useApp((s) => s.learnTitles);
-  const [q, setQ] = useState('');
   // Opened from a section (e.g. Books in Top 50): start on that category, and "add it yourself" uses it too.
-  const params = useLocalSearchParams<{ cat?: string }>();
+  const params = useLocalSearchParams<{ cat?: string; q?: string }>();
   const start = CATS.includes(params.cat as Cat) ? (params.cat as Cat) : null;
+  const [q, setQ] = useState(typeof params.q === 'string' ? params.q.slice(0, 100) : '');
   const [cat, setCat] = useState<Cat | 'All'>(start ?? 'All');
   const [newCat, setNewCat] = useState<Cat>(start ?? 'Movies');
   const [local, setLocal] = useState<Found[]>([]);

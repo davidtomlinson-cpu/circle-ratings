@@ -19,6 +19,7 @@ const ICONS = {
   chevronRight: [P('m9 18 6-6-6-6')],
   arrowLeft: [P('m12 19-7-7 7-7'), P('M19 12H5')],
   plus: [P('M5 12h14'), P('M12 5v14')],
+  x: [P('M18 6 6 18'), P('m6 6 12 12')],
   check: [P('M20 6 9 17l-5-5')],
   userPlus: [P('M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2'), <Circle key="c" cx={9} cy={7} r={4} />, P('M19 8v6'), P('M22 11h-6')],
   users: [P('M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2'), <Circle key="c" cx={9} cy={7} r={4} />, P('M22 21v-2a4 4 0 0 0-3-3.87'), P('M16 3.13a4 4 0 0 1 0 7.75')],
