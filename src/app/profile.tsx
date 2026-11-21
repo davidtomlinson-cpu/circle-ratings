@@ -1,4 +1,6 @@
+import Constants from 'expo-constants';
 import { router } from 'expo-router';
+import * as Updates from 'expo-updates';
 import { useState, type ReactNode } from 'react';
 import { Pressable, Switch, View } from 'react-native';
 import { Field } from '../components/Field';
@@ -105,6 +107,15 @@ export default function Profile() {
       <Pressable onPress={() => router.push('/delete-account')} style={{ alignItems: 'center', paddingVertical: 4 }}>
         <T size={13} weight="bold" color={c.textMuted}>Delete account</T>
       </Pressable>
+      <T size={11} color={c.textMuted} center>{versionLine()}</T>
     </Page>
   );
+}
+
+/** Which app version and over-the-air update this phone is running, for support. */
+function versionLine() {
+  const v = `SofaClub ${Constants.expoConfig?.version ?? ''}`.trim();
+  if (!Updates.isEnabled || Updates.isEmbeddedLaunch || !Updates.createdAt) return `${v} · original build`;
+  const when = Updates.createdAt.toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  return `${v} · update ${when}`;
 }
