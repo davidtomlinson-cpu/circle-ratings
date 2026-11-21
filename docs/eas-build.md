@@ -32,7 +32,7 @@ These are already set up in `eas.json`.
 npx eas-cli@latest init
 ```
 
-This creates the project on Expo and adds its id to `app.json`.
+Done: the app is linked to the `sofaclub` project in the `davetom2375s-team` Expo account (id in `app.json`).
 
 ### 3. Android development build (about 15 minutes, no Google account needed)
 

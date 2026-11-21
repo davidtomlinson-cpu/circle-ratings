@@ -42,6 +42,12 @@
           "backgroundColor": "#2e2b25"
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "19087061-1085-45e1-bc0d-836114cd464d"
+      }
+    },
+    "owner": "davetom2375s-team"
   }
 }
