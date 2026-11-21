@@ -68,6 +68,20 @@ Adding a new iPhone later means registering it and building again.
 
 Open the development build on the phone. It loads the code from a computer running `npx expo start` on the same network (or `npx expo start --tunnel` from anywhere). For testing away from a computer, use a **preview** build instead. It behaves like the real app and doesn't need a computer.
 
+## Sending changes without a new build (over-the-air updates)
+
+Most changes (screens, wording, app logic) can go to phones without rebuilding or reinstalling. The app checks for an update each time it opens, downloads it in the background and uses it the **next** time it's opened. So testers see a change after closing the app fully and opening it twice.
+
+```bash
+npm run update:preview -- --message "What changed"
+```
+
+That sends the current code to every **preview** build (our test apps). `npm run update:production` does the same for store builds, once they exist. Updates use the settings stored on Expo (Project → Environment variables), not `.env`. When a new public key is added to `.env` (the RevenueCat keys, for example), add it on Expo too, for the development, preview and production environments.
+
+**When a new build is still needed:** adding or upgrading a package with native code, changing `app.json` (icon, name, permissions), or upgrading Expo. The runtime version uses Expo's "fingerprint" rule: it changes on its own whenever the native side changes, so an update can never reach a phone whose build can't run it. If an update doesn't arrive, the phone probably needs a fresh build.
+
+**Undoing a bad update:** `npx eas-cli@latest update:rollback` sends phones back to the previous update.
+
 ## Later
 
 - **Store builds:** `npx eas-cli@latest build --profile production`, then `npx eas-cli@latest submit`. Needs the store records from `docs/billing-setup.md`.

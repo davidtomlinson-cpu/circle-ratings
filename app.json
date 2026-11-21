@@ -48,6 +48,12 @@
         "projectId": "19087061-1085-45e1-bc0d-836114cd464d"
       }
     },
-    "owner": "davetom2375s-team"
+    "owner": "davetom2375s-team",
+    "runtimeVersion": {
+      "policy": "fingerprint"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/19087061-1085-45e1-bc0d-836114cd464d"
+    }
   }
 }
