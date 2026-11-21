@@ -68,6 +68,28 @@ Adding a new iPhone later means registering it and building again.
 
 Open the development build on the phone. It loads the code from a computer running `npx expo start` on the same network (or `npx expo start --tunnel` from anywhere). For testing away from a computer, use a **preview** build instead. It behaves like the real app and doesn't need a computer.
 
+## Test and live versions
+
+One codebase, two apps. They can sit side by side on the same phone.
+
+| | Test | Live |
+|---|---|---|
+| Name on the phone | SofaClub Test | SofaClub |
+| App ID (both stores) | `com.davala.circleratings.test` | `com.davala.circleratings` |
+| Link scheme | `sofaclub-test://` | `sofaclub://` |
+| Built with | `--profile preview` (or `development`) | `--profile production` |
+| Installed from | a link from Expo | App Store / Google Play (TestFlight and internal testing first) |
+| Gets updates from | `npm run update:preview` | `npm run update:production` |
+| Real purchases | No: store products belong to the live app ID | Yes, with sandbox purchases in TestFlight / internal testing |
+
+How it works: `app.config.js` switches name, app ID and scheme when `APP_VARIANT=test`. That variable is set on Expo for the **development** and **preview** environments only, so test builds and test updates pick it up and live ones never do.
+
+Both versions use the **same database**. Test accounts and ratings are real data, so use your own accounts for testing and delete test accounts afterwards.
+
+**Supabase email links:** add `sofaclub-test://` next to `sofaclub://` in Supabase → Authentication → URL Configuration → Redirect URLs, so sign-up and password-reset emails open the test app too.
+
+**Payments are tested in the live app.** Apple and Google attach subscriptions to the app ID, so the test app can't buy. Test purchases in the live app through TestFlight (iPhone) and internal testing (Android), which use free sandbox purchases.
+
 ## Sending changes without a new build (over-the-air updates)
 
 Most changes (screens, wording, app logic) can go to phones without rebuilding or reinstalling. The app checks for an update each time it opens. If it finds one within a few seconds, it switches to it straight away (a brief reload just after opening). On a slow connection it keeps the download and uses it the next time the app opens. Profile shows which update a phone is running, at the bottom.
@@ -80,7 +102,7 @@ That sends the current code to every **preview** build (our test apps). `npm run
 
 **When a new build is still needed:** adding or upgrading a package with native code, changing `app.json` (icon, name, permissions), or upgrading Expo. The runtime version uses Expo's "fingerprint" rule: it changes on its own whenever the native side changes, so an update can never reach a phone whose build can't run it. If an update doesn't arrive, the phone probably needs a fresh build.
 
-**Gotcha: `package.json` scripts count as native.** Expo's fingerprint includes the `scripts` section of `package.json`, so editing a command shortcut between builds makes updates go to a runtime no installed phone has, and phones silently ignore them. Before publishing, check the runtime matches the installed builds: `npx expo-updates runtimeversion:resolve --platform ios` (and `android`). At the next native build, add a `fingerprint.config.js` that skips scripts, so this stops mattering.
+**Check before publishing:** the runtime must match the installed builds, or phones silently ignore the update. `fingerprint.config.js` makes Expo ignore `package.json` script shortcuts and `.gitignore`, which used to trip this. For test builds check with `APP_VARIANT=test npx expo-updates runtimeversion:resolve --platform ios` (and `android`).
 
 **Undoing a bad update:** `npx eas-cli@latest update:rollback` sends phones back to the previous update.
 

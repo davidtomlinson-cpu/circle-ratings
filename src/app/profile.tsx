@@ -114,7 +114,8 @@ export default function Profile() {
 
 /** Which app version and over-the-air update this phone is running, for support. */
 function versionLine() {
-  const v = `SofaClub ${Constants.expoConfig?.version ?? ''}`.trim();
+  const test = (Constants.expoConfig?.extra as { appVariant?: string } | undefined)?.appVariant === 'test';
+  const v = `SofaClub ${test ? 'Test ' : ''}${Constants.expoConfig?.version ?? ''}`.trim();
   if (!Updates.isEnabled || Updates.isEmbeddedLaunch || !Updates.createdAt) return `${v} · original build`;
   const when = Updates.createdAt.toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
   return `${v} · update ${when}`;
