@@ -1,15 +1,16 @@
 import { useState } from 'react';
 import { View } from 'react-native';
-import { CatChips } from '../../components/CatChips';
-import { FilterField, matches, NoMatch } from '../../components/FilterField';
-import { TitleRow } from '../../components/TitleRow';
-import { Chip, ChipRow, H, Page, Row, T } from '../../components/ui';
-import { ago, item } from '../../data/model';
-import type { Cat } from '../../data/types';
-import { useApp, viewers } from '../../state/store';
-import { c, color } from '../../theme';
+import { CatChips } from './CatChips';
+import { FilterField, matches, NoMatch } from './FilterField';
+import { TitleRow } from './TitleRow';
+import { Chip, ChipRow, Row, T } from './ui';
+import { ago, item } from '../data/model';
+import type { Cat } from '../data/types';
+import { useApp, viewers } from '../state/store';
+import { c, color } from '../theme';
 
-export default function MyList() {
+/** The Rated half of My Club: everything you've rated, with your hearts. */
+export function MyListView() {
   const s = useApp();
   const [cat, setCat] = useState<Cat | 'All'>('All');
   const [five, setFive] = useState(false);
@@ -23,11 +24,7 @@ export default function MyList() {
   const share = s.vis === 'locked' ? 'Locked · only you can see it' : s.vis === 'all' ? `Shared live with all ${who.length} contacts` : `Shared live with ${who.length} ${who.length === 1 ? 'contact' : 'contacts'}`;
 
   return (
-    <Page tabs>
-      <View>
-        <H size={26}>My list</H>
-        <T size={13} color={c.textSoft}>Everything you’ve watched, read and heard, with your hearts.</T>
-      </View>
+    <>
       <CatChips keys={all} value={cat} onChange={setCat} />
       <FilterField value={q} onChange={setQ} placeholder="Find in your ratings" cat={cat} />
       <ChipRow>
@@ -48,6 +45,6 @@ export default function MyList() {
       {!shown.length && (q.trim() && (five ? fives : inCat).length
         ? <NoMatch q={q} where="your ratings" cat={cat} />
         : <T size={14} color={c.textMuted} center>No ratings here yet.</T>)}
-    </Page>
+    </>
   );
 }

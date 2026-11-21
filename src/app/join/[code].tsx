@@ -69,7 +69,7 @@ export default function Join() {
         {heart(color.s400)}
         <H size={34} center>You’re in</H>
         <T size={15} color={c.textSoft} center>You and {joined} can now see each other’s lists, depending on each of your privacy settings.</T>
-        <Btn label="See your circle" onPress={() => router.replace('/contacts')} />
+        <Btn label="See your circle" onPress={() => router.replace('/friends')} />
       </Page>
     );
   }
@@ -96,7 +96,7 @@ export default function Join() {
       {preview && !preview.is_self && preview.already_in && (
         <>
           <H size={28} center>You’re already in {preview.owner_name}’s circle</H>
-          <Btn label="See your circle" onPress={() => router.replace('/contacts')} />
+          <Btn label="See your circle" onPress={() => router.replace('/friends')} />
         </>
       )}
       {preview && !preview.is_self && !preview.already_in && (

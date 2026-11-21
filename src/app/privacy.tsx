@@ -15,7 +15,7 @@ export default function Privacy() {
     <Page>
       <BackHeader title="Privacy" />
       <View>
-        <H size={26}>Who can see My list</H>
+        <H size={26}>Who can see your ratings</H>
         <T size={13} color={c.textSoft}>Covers your ratings and rating notifications. Loved by the Club stays anonymous either way.</T>
       </View>
       <View style={{ gap: 10 }} accessibilityRole="radiogroup">

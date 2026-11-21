@@ -60,10 +60,10 @@ export default function Today() {
         </Row>
         <ChipRow>
           <ActionChip icon="userPlus" label="Invite" href="/invite" />
-          <ActionChip icon="users" label="Contacts’ lists" href="/contacts" />
+          <ActionChip icon="users" label="Friends" href="/friends" />
           <ActionChip icon="lock" label="Privacy" href="/privacy" />
-          <ActionChip icon="bookmark" label="Watchlist" href="/watchlist" />
-          <ActionChip icon="heart" label="My list" href="/mylist" />
+          <ActionChip icon="bookmark" label="Watchlist" href="/myclub?view=watchlist" />
+          <ActionChip icon="heart" label="Rated" href="/myclub?view=rated" />
           <ActionChip icon="settings" label="Settings" href="/profile" />
         </ChipRow>
       </Card>
@@ -89,7 +89,7 @@ export default function Today() {
       </Card>
 
       <Card style={{ gap: 6 }}>
-        <SectionLabel right={<Pressable onPress={() => router.push('/watchlist')}><T size={12} weight="bold" color={c.link}>See all</T></Pressable>}>
+        <SectionLabel right={<Pressable onPress={() => router.push('/myclub?view=watchlist')}><T size={12} weight="bold" color={c.link}>See all</T></Pressable>}>
           {`Up next · Watchlist ${want.length}`}
         </SectionLabel>
         <T size={13} color={c.textSoft}>Finished one? Rate it to share with your circle.</T>

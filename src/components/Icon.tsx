@@ -33,7 +33,7 @@ type Props = { name: IconName; size?: number; color?: string; fill?: string; str
 
 export function Icon({ name, size = 24, color: stroke = color.n100, fill = 'none', strokeWidth = 2.75 }: Props) {
   if (name === 'heart5') {
-    // "My list" tab: heart with a 5 inside.
+    // "My Club" tab: heart with a 5 inside.
     return (
       <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth={strokeWidth - 0.75} strokeLinecap="round" strokeLinejoin="round">
         <Path d={HEART_PATH} fill={fill} />

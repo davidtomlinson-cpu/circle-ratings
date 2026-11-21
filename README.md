@@ -59,7 +59,7 @@ The app can't break the rules below, because the database itself enforces them (
 ## What's built
 
 - **Accounts:** email sign-up, sign-in, password reset and in-app account deletion. You stay signed in between launches. App pages are locked when you're signed out.
-- **Tabs:** Today, Top 50, Club, Trending, Watchlist and My list.
+- **Tabs:** Today, Top 50, Club, Trending, My Club (Watchlist and Rated) and Friends.
 - **Rating sheet:** tap or drag across the hearts. The app updates straight away. If the server refuses (for example, you're out of hearts), the change is undone and a message explains why.
 - **Title detail:** your rating, your circle's real ratings and average, and the Everyone average. Comments are saved to the server.
 - **Subscriptions:**

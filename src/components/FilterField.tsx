@@ -1,4 +1,4 @@
-// Filter box for your own lists (Watchlist, My list): narrows the list as you type. The "+ Add" button
+// Filter box for your own lists (My Club: Watchlist and Rated): narrows the list as you type. The "+ Add" button
 // next to it opens catalogue Search on the same category, carrying over what was typed.
 import { router } from 'expo-router';
 import { Pressable, TextInput, View } from 'react-native';

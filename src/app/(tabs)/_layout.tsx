@@ -8,10 +8,10 @@ import { alpha, color } from '../../theme';
 const TABS: { name: string; label: string; icon: IconName }[] = [
   { name: 'index', label: 'Today', icon: 'sun' },
   { name: 'top50', label: 'Top 50', icon: 'circleCheck' },
-  { name: 'world', label: 'Club', icon: 'users' },
+  { name: 'world', label: 'Club', icon: 'globe' },
   { name: 'trending', label: 'Trending', icon: 'sparkles' },
-  { name: 'watchlist', label: 'Watchlist', icon: 'bookmark' },
-  { name: 'mylist', label: 'My list', icon: 'heart5' },
+  { name: 'myclub', label: 'My Club', icon: 'heart5' },
+  { name: 'friends', label: 'Friends', icon: 'users' },
 ];
 
 function TabBar({ state, navigateToTab }: BottomTabBarProps) {

@@ -9,7 +9,7 @@ import { useApp } from '../state/store';
 import { c, color } from '../theme';
 
 const GOES = [
-  'Your ratings, watchlist and My list',
+  'Your ratings and watchlist',
   'Your comments',
   'Your place in other people’s circles, and theirs in yours',
   'Your invite code and notifications',
