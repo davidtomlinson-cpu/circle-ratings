@@ -107,7 +107,7 @@ export default function Today() {
       <Card bg={color.a700} onPress={() => router.push('/trending')} style={{ gap: 8 }}>
         <Row><Icon name="sparkles" size={18} /><T size={14} weight="bold" style={{ flex: 1 }}>Trending this week</T><Icon name="chevronRight" size={18} /></Row>
         {trending.rows.slice(0, 3).map((r, i) => <TitleRow key={r.key} k={r.key} disc={<Disc size={32} bg={c.primary} fg={c.text} label={String(i + 1)} />} sub={`${r.people} people this week`} action={<View />} />)}
-        {!trending.loading && !trending.rows.length && <T size={13} color={color.a100}>What people on SofaList are rating and adding. Titles appear once 3 people have.</T>}
+        {!trending.loading && !trending.rows.length && <T size={13} color={color.a100}>What people on SofaClub are rating and adding. Titles appear once 3 people have.</T>}
       </Card>
 
       <Card onPress={() => router.push('/world')} style={{ gap: 8 }}>

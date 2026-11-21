@@ -32,7 +32,7 @@ export default function Trending() {
 
       <View>
         <H size={26}>Trending this week</H>
-        <T size={12} color={c.textMuted}>What the most people on SofaList rated or added in the last 7 days</T>
+        <T size={12} color={c.textMuted}>What the most people on SofaClub rated or added in the last 7 days</T>
       </View>
 
       <ChipRow>

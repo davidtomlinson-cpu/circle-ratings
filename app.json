@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "SofaList",
-    "slug": "sofalist",
+    "name": "SofaClub",
+    "slug": "sofaclub",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -25,7 +25,7 @@
       "bundler": "metro",
       "output": "single"
     },
-    "scheme": "sofalist",
+    "scheme": "sofaclub",
     "backgroundColor": "#2e2b25",
     "plugins": [
       "expo-router",

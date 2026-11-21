@@ -19,7 +19,7 @@ const json = (status: number, body: unknown) =>
 
 // Both sources ask for an identifying User-Agent with a way to contact us. Set CATALOGUE_CONTACT
 // (a support email or web page) as a function secret before launch.
-const UA = `SofaList/1.0 (${Deno.env.get('CATALOGUE_CONTACT') || 'catalogue lookups'})`;
+const UA = `SofaClub/1.0 (${Deno.env.get('CATALOGUE_CONTACT') || 'catalogue lookups'})`;
 // Optional Wikimedia OAuth 2.0 access token: signed requests get much higher rate limits.
 const WM_TOKEN = Deno.env.get('WIKIMEDIA_TOKEN') ?? '';
 const CACHE_DAYS = 7;

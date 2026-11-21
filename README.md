@@ -1,4 +1,4 @@
-# SofaList
+# SofaClub
 
 A mobile app for friends and family to rate films, TV, albums and books out of 5 hearts. It was built from the "Circle Ratings" design handoff.
 
@@ -6,7 +6,7 @@ Stack: Expo SDK 58 (React Native 0.88), Expo Router, TypeScript, zustand and Sup
 
 ## Brand
 
-The name is **SofaList**. The logo is a glowing line drawing of a sofa with a ticked list and five hearts, in the app's own colours (sage, cream and apricot on the dark brown background). `assets/brand/icon.svg` is the master and `assets/brand/sofalist-logo.png` is the logo with the name. To change the icon, edit `gen.py`, then run `python3 gen.py && node render.js` in `assets/brand/` and copy `out/*.png` into `assets/`. That covers iPhone, Android adaptive and monochrome, splash and favicon.
+The name is **SofaClub**. The logo is a glowing line drawing of a sofa with a ticked list and five hearts, in the app's own colours (sage, cream and apricot on the dark brown background). `assets/brand/icon.svg` is the master and `assets/brand/sofaclub-logo.png` is the logo with the name. To change the icon, edit `gen.py`, then run `python3 gen.py && node render.js` in `assets/brand/` and copy `out/*.png` into `assets/`. That covers iPhone, Android adaptive and monochrome, splash and favicon.
 
 There's also a small version (`assets/brand/small.svg`, just the sofa and one heart) for sizes where the full drawing turns to mush. It's used for the favicon and the Android monochrome icon, and it's the one to use for the notification icon when push notifications are added.
 
@@ -69,11 +69,11 @@ The app can't break the rules below, because the database itself enforces them (
   - **Join a family plan:** works from a link even when signed out.
   - **Trial-ending page.**
   - Account deletion warns a paying user to cancel in the store first.
-- **Search & add:** real search across films, TV, books and albums. Results already on SofaList show instantly, then the outside databases. Picking a result saves it on the server, so watchlists, ratings and comments work the same as for Top 50 titles. You can still add something yourself if it isn't found.
+- **Search & add:** real search across films, TV, books and albums. Results already on SofaClub show instantly, then the outside databases. Picking a result saves it on the server, so watchlists, ratings and comments work the same as for Top 50 titles. You can still add something yourself if it isn't found.
 - **Pages:** Jar of hearts, Privacy, and Profile & settings (name, privacy, notification preferences, sign out).
 - **Circle:**
   - **Invite:** your personal code, with Share, Copy and Make a new code, plus a "Have a code?" box.
-  - **Join a circle:** opens from `sofalist://join/CODE`. It works signed out too: the code is remembered through sign-up.
+  - **Join a circle:** opens from `sofaclub://join/CODE`. It works signed out too: the code is remembered through sign-up.
   - **Contacts:** each person's rated count, top pick, and who can see whose list.
   - **Friend profile:** their list, taste match, a locked state, and remove from circle.
   - **Notifications:** with a live badge.

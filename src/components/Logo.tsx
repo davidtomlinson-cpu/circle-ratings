@@ -1,4 +1,4 @@
-// SofaList logo: the glowing sofa mark with the two-colour wordmark under or beside it.
+// SofaClub logo: the glowing sofa mark with the two-colour wordmark under or beside it.
 import { Image, Text, View } from 'react-native';
 import { color } from '../theme';
 import { H } from './ui';
@@ -10,7 +10,7 @@ export function Wordmark({ size }: { size: number }) {
   return (
     <H size={size}>
       <Text style={{ color: color.s400 }}>Sofa</Text>
-      <Text style={{ color: color.a400 }}>List</Text>
+      <Text style={{ color: color.a400 }}>Club</Text>
     </H>
   );
 }
@@ -21,7 +21,7 @@ export function Logo({ mark, text, stacked = false }: { mark: number; text: numb
     <View
       accessible
       accessibilityRole="header"
-      accessibilityLabel="SofaList"
+      accessibilityLabel="SofaClub"
       style={stacked ? { alignItems: 'center', gap: 4 } : { flexDirection: 'row', alignItems: 'center', gap: 6 }}
     >
       <Image source={MARK} style={{ width: mark, height: mark }} resizeMode="contain" />

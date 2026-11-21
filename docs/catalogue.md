@@ -1,6 +1,6 @@
 # Catalogue: where titles come from
 
-SofaList searches real databases for films, TV, books and albums. Everything we use is public-domain data (CC0), so we're allowed to store it and use it in a paid app.
+SofaClub searches real databases for films, TV, books and albums. Everything we use is public-domain data (CC0), so we're allowed to store it and use it in a paid app.
 
 | What | Source | Licence | Cost |
 |---|---|---|---|
@@ -11,12 +11,12 @@ We show no posters or cover art. Cover images are copyrighted by their owners, a
 
 ## How it works
 
-1. **Search.** The app first searches titles already on SofaList, which is instant. It then calls the `catalogue` edge function, which asks Wikidata and/or MusicBrainz.
+1. **Search.** The app first searches titles already on SofaClub, which is instant. It then calls the `catalogue` edge function, which asks Wikidata and/or MusicBrainz.
    - Results are ranked by popularity: how many Wikipedias cover a film or book, and how many releases an album has.
    - Each answer is cached for 7 days in `catalogue_cache`, so repeat searches don't touch the outside sources.
 2. **Picking a result.** When someone opens or adds a result, the function re-reads it at the source and saves it in `titles`, with key `wd:Q…` or `mb:…`. The app can never write catalogue titles itself.
 3. **No duplicates.** The 220 titles that ship with the app (Top 50 lists and extras) are linked to their Wikidata or MusicBrainz ids. A search for The Godfather lands on the existing Top 50 entry, not a second copy.
-4. **Trending.** This shows what the most people on SofaList rated or added to a watchlist in the last 7 days. A title needs at least 3 people, and we never show who. It's empty until people use the app.
+4. **Trending.** This shows what the most people on SofaClub rated or added to a watchlist in the last 7 days. A title needs at least 3 people, and we never show who. It's empty until people use the app.
 
 ## Setup before launch
 
@@ -33,7 +33,7 @@ Both sources ask apps to identify themselves with a way to contact the developer
 Signed requests get much higher Wikidata limits than anonymous ones.
 
 1. Create a Wikimedia account at meta.wikimedia.org (or use an existing Wikipedia account).
-2. Go to Special:OAuthConsumerRegistration/propose/oauth2 on meta.wikimedia.org and register an **owner-only** OAuth 2.0 consumer for "SofaList catalogue search". Read-only access ("basic rights") is enough.
+2. Go to Special:OAuthConsumerRegistration/propose/oauth2 on meta.wikimedia.org and register an **owner-only** OAuth 2.0 consumer for "SofaClub catalogue search". Read-only access ("basic rights") is enough.
 3. Copy the **access token** it shows you once.
 4. In Supabase → Edge Functions → Secrets, add `WIKIMEDIA_TOKEN` with that value. **Never paste it into chat or the repo.**
 

@@ -7,7 +7,7 @@ import { supabase } from './supabase';
 export type TrendRow = { key: string; people: number; previous: number };
 
 /**
- * Trending on SofaList: titles the most different people rated or added to a watchlist in the last 7 days.
+ * Trending on SofaClub: titles the most different people rated or added to a watchlist in the last 7 days.
  * The server only lists a title once at least 3 people have, and never says who.
  */
 export function useTrending(cat: Cat | 'All' = 'All', limit = 20) {

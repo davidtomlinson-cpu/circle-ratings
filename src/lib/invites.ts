@@ -21,14 +21,14 @@ export function normaliseFamilyCode(raw: string) {
 export const familyInviteLink = (code: string) => Linking.createURL('/family-join', { queryParams: { code } });
 
 export function familyInviteMessage(name: string, code: string, planName: string) {
-  return `${name} has added you to their SofaList ${planName}. No payment needed.\n\nOpen this link on your phone: ${familyInviteLink(code)}\nOr in the app, tap “Have a family invitation?” and enter ${code}`;
+  return `${name} has added you to their SofaClub ${planName}. No payment needed.\n\nOpen this link on your phone: ${familyInviteLink(code)}\nOr in the app, tap “Have a family invitation?” and enter ${code}`;
 }
 
 /** Link that opens the join screen when the app is installed. */
 export const inviteLink = (code: string) => Linking.createURL(`/join/${code}`);
 
 export function inviteMessage(name: string, code: string) {
-  return `${name} invited you to their circle on SofaList, where we rate films, TV, books and albums in hearts.\n\nOpen this link on your phone: ${inviteLink(code)}\nOr enter the code ${code} under Invite → “Have a code?”`;
+  return `${name} invited you to their circle on SofaClub, where we rate films, TV, books and albums in hearts.\n\nOpen this link on your phone: ${inviteLink(code)}\nOr enter the code ${code} under Invite → “Have a code?”`;
 }
 
 // Remember a code opened while signed out, so we can offer it right after sign-in.

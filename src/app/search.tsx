@@ -26,7 +26,7 @@ export default function Search() {
   const query = q.trim();
   const seq = useRef(0);
 
-  // Titles already on SofaList: quick, so search as you type.
+  // Titles already on SofaClub: quick, so search as you type.
   useEffect(() => {
     if (query.length < 2) return;
     let live = true;

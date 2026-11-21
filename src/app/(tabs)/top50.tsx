@@ -87,7 +87,7 @@ export default function Top50() {
           <Icon name="sparkles" size={20} />
           <View style={{ flex: 1 }}>
             <T size={14} weight="bold">Trending this week</T>
-            <T size={12} color={color.a200}>What people on SofaList are rating and adding</T>
+            <T size={12} color={color.a200}>What people on SofaClub are rating and adding</T>
           </View>
           <Icon name="chevronRight" size={18} />
         </Row>
