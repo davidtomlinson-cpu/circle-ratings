@@ -73,3 +73,7 @@ Open the development build on the phone. It loads the code from a computer runni
 - **Store builds:** `npx eas-cli@latest build --profile production`, then `npx eas-cli@latest submit`. Needs the store records from `docs/billing-setup.md`.
 - **RevenueCat keys:** once they exist, add them to `.env` (they're public keys). A development build picks them up straight away; preview and store builds need building again.
 - **Push notifications** need `expo-notifications` and push credentials. That's a separate piece of work.
+
+## Known loose end
+
+On expo.dev, the SofaClub iOS credentials still have an **App Store** entry that points at the Ad Hoc (test-device) profile. That happened when the profile was uploaded through the website wizard. It doesn't affect test builds. Before the first TestFlight or App Store build, remove that App Store entry's profile so Expo can make a proper App Store one. The Ad Hoc entry is the one test builds use: keep it.
