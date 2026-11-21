@@ -53,7 +53,7 @@ The app can't break the rules below, because the database itself enforces them (
   - **Ratings and comments:** refused by the database without access.
   - **Family invitations (`HEART-XXXX-XXXX`):** only the owner can make them. Each works once, is limited by the plan's places, and is cancelled when replaced or the member is removed.
   - **Catalogue:** films, TV and books come from Wikidata and albums from MusicBrainz, both public-domain data. Only the `catalogue` edge function writes these titles, after re-reading them at the source. Details and setup steps are in [`docs/catalogue.md`](docs/catalogue.md).
-  - **Trending:** what the most people rated or added in the last 7 days, with a 3-person minimum and never who.
+  - **Trending:** what's trending in the wider world this week (Wikipedia page views for films, TV and books; ListenBrainz for albums), refreshed daily on the server. Above it, "Popular on SofaClub" appears once titles have activity from at least 3 people. Details in [`docs/catalogue.md`](docs/catalogue.md).
 - **Day-5 trial reminder:** posted by an hourly `pg_cron` job. It's always sent, because it's a required reminder.
 
 ## What's built
@@ -79,7 +79,7 @@ The app can't break the rules below, because the database itself enforces them (
   - **Notifications:** with a live badge.
   - **Everyone's Top 20.**
 
-Trending shows real activity from the last 7 days, so it stays empty until people use the app.
+Trending's world lists refresh daily at 05:17 UTC. "Popular on SofaClub" stays hidden until people use the app.
 
 ## Not built yet
 

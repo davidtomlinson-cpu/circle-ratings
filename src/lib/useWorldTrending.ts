@@ -8,7 +8,7 @@ export type WorldRow = { key: string; rank: number; previousRank: number | null;
 
 /**
  * Trending in the wider world this week, refreshed daily on the server:
- * films, TV and books by English Wikipedia page views, albums by ListenBrainz plays.
+ * films, TV and books by English Wikipedia page views, albums by estimated ListenBrainz listeners.
  */
 export function useWorldTrending(cat: Cat | 'All' = 'All', limit = 30) {
   const learnTitles = useApp((s) => s.learnTitles);
@@ -22,8 +22,8 @@ export function useWorldTrending(cat: Cat | 'All' = 'All', limit = 30) {
     setLoading(false);
     setError(!!e);
     if (!data) return;
-    const list = data as (Omit<TitleRow, 'id' | 'source'> & { rank: number; previous_rank: number | null; score: number; source: WorldRow['source'] })[];
-    learnTitles(list.map((r) => ({ key: r.key, category: r.category, title: r.title, creator: r.creator, year: r.year, source: r.key.includes(':') ? 'catalogue' : 'static' })));
+    const list = data as (Omit<TitleRow, 'source'> & { rank: number; previous_rank: number | null; score: number; source: WorldRow['source'] })[];
+    learnTitles(list.map((r) => ({ id: r.id, key: r.key, category: r.category, title: r.title, creator: r.creator, year: r.year, source: r.key.includes(':') ? 'catalogue' : 'static' })));
     setRows(list.map((r) => ({ key: r.key, rank: r.rank, previousRank: r.previous_rank, score: Number(r.score), source: r.source })));
   }, [cat, limit, learnTitles]);
 
@@ -41,5 +41,6 @@ export function worldMovement(r: WorldRow): string {
 const compact = (n: number) =>
   n >= 1e6 ? `${(n / 1e6).toFixed(n >= 1e7 ? 0 : 1)}M` : n >= 1e3 ? `${Math.round(n / 1e3)}k` : String(n);
 
-/** "1.2M Wikipedia views" or "58k plays". */
-export const worldScore = (r: WorldRow) => (r.source === 'wikipedia' ? `${compact(r.score)} Wikipedia views` : `${compact(r.score)} plays`);
+/** "1.2M Wikipedia views" or "about 640 listeners". */
+export const worldScore = (r: WorldRow) =>
+  r.source === 'wikipedia' ? `${compact(r.score)} Wikipedia views` : `about ${compact(r.score)} listeners on ListenBrainz`;

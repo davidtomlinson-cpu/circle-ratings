@@ -15,7 +15,7 @@ const SOURCE_LINE: Record<TrendCat, string> = {
   Films: 'Ranked by English Wikipedia page views over the last 7 days. Updated daily.',
   'TV series': 'Ranked by English Wikipedia page views over the last 7 days. Updated daily.',
   Books: 'Ranked by English Wikipedia page views over the last 7 days. Updated daily.',
-  Albums: 'Ranked by plays on ListenBrainz this week. Updated daily.',
+  Albums: 'Ranked by how many different people played them on ListenBrainz this week. Updated daily.',
 };
 
 function MoveTag({ move }: { move: string }) {

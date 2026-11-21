@@ -1,6 +1,6 @@
 // Run: node --experimental-strip-types supabase/functions/_shared/test/trending.test.ts
 import assert from 'node:assert/strict';
-import { lastDays, mergeListens, sumWikiViews, topPerCategory } from '../trending.ts';
+import { estimateListeners, lastDays, mergeListens, sumWikiViews, topPerCategory } from '../trending.ts';
 
 let n = 0;
 const t = (name: string, fn: () => void) => { fn(); n++; console.log('ok', name); };
@@ -35,6 +35,18 @@ t('top N per category keeps the order', () => {
 
 t('last complete days, newest first, across a month end', () => {
   assert.deepEqual(lastDays(3, new Date('2026-12-02T10:00:00Z')), ['2026/12/01', '2026/11/30', '2026/11/29']);
+});
+
+t('albums are ranked by estimated listeners, not raw plays', () => {
+  const out = estimateListeners(
+    [{ mbid: 'superfans', listens: 258125 }, { mbid: 'broad', listens: 8876 }, { mbid: 'brand-new', listens: 3549 }, { mbid: 'unknown', listens: 99999 }],
+    [
+      { release_group_mbid: 'superfans', total_listen_count: 48000760, total_user_count: 4798 }, // ~10,000 plays each
+      { release_group_mbid: 'broad', total_listen_count: 1376000, total_user_count: 28712 }, // ~48 plays each
+      { release_group_mbid: 'brand-new', total_listen_count: 900, total_user_count: 37 }, // totals lag: capped at 37
+    ],
+  );
+  assert.deepEqual(out, [{ mbid: 'broad', listeners: 185 }, { mbid: 'brand-new', listeners: 37 }, { mbid: 'superfans', listeners: 26 }]);
 });
 
 console.log(`${n} passed`);

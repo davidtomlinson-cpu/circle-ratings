@@ -134,6 +134,15 @@ export const useApp = create<State>()(
         return !error;
       }
       const tid = (key: string) => get().titleIds[key];
+      /** The server id for a title, looking it up if this screen got the title without one (e.g. from a Trending list). */
+      const idFor = async (key: string): Promise<number | null> => {
+        const known = tid(key);
+        if (known) return known;
+        const { data } = await supabase.from('titles').select(TITLE_COLS).eq('key', key).maybeSingle();
+        if (!data) return null;
+        get().learnTitles([data as TitleRow]);
+        return (data as TitleRow).id ?? null;
+      };
 
       return {
         ...EMPTY,
@@ -300,14 +309,19 @@ export const useApp = create<State>()(
           const next = on ?? !s.want[key];
           const prev = s.want;
           set({ want: { ...prev, [key]: next ? 1 : 0 } });
-          const id = tid(key);
-          if (!id) return;
-          void write(
-            () => (next
-              ? supabase.from('watchlist').upsert({ title_id: id }, { onConflict: 'user_id,title_id', ignoreDuplicates: true })
-              : supabase.from('watchlist').delete().eq('title_id', id)),
-            { want: prev },
-          );
+          void (async () => {
+            const id = await idFor(key);
+            if (!id) {
+              set({ want: prev });
+              return get().showError('Couldn’t find that title. Try again in a moment.');
+            }
+            void write(
+              () => (next
+                ? supabase.from('watchlist').upsert({ title_id: id }, { onConflict: 'user_id,title_id', ignoreDuplicates: true })
+                : supabase.from('watchlist').delete().eq('title_id', id)),
+              { want: prev },
+            );
+          })();
         },
 
         openSheet: (key) => set((s) => ({ sheet: { open: true, key, val: s.my[key] ?? 0 } })),
@@ -318,8 +332,6 @@ export const useApp = create<State>()(
           const s = get();
           const { key, val } = s.sheet;
           if (!val) return;
-          const id = tid(key);
-          if (!id) return s.showError('This title isn’t synced yet. Try again in a moment.');
           const undo = { my: s.my, rAt: s.rAt, want: s.want, fresh: s.fresh };
           const want = { ...s.want };
           const fresh = { ...s.fresh };
@@ -327,6 +339,11 @@ export const useApp = create<State>()(
           delete want[key];
           set({ my: { ...s.my, [key]: val }, rAt: { ...s.rAt, [key]: Date.now() }, want, fresh, sheet: { ...s.sheet, open: false } });
           void (async () => {
+            const id = await idFor(key);
+            if (!id) {
+              set(undo);
+              return get().showError('Couldn’t find that title. Try again in a moment.');
+            }
             const res = await supabase
               .from('ratings')
               .upsert({ title_id: id, hearts: val }, { onConflict: 'user_id,title_id' })

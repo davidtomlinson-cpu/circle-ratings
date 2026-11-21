@@ -61,7 +61,7 @@ grant execute on function public.replace_world_trending(public.title_category, t
 
 -- Daily refresh at 05:17 UTC: pg_cron calls the edge function through pg_net with a shared secret
 -- kept in Vault (name 'trending_cron_secret'), which the function checks.
-create extension if not exists pg_net;
+create extension if not exists pg_net with schema extensions;
 
 create function private.refresh_world_trending() returns bigint
 language plpgsql security definer set search_path = '' as $$

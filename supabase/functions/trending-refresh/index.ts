@@ -1,13 +1,16 @@
 // Builds "Trending this week" from outside the app, once a day (pg_cron → pg_net → here).
 //   Films, TV and books: the most-read English Wikipedia articles over the last 7 days, kept only if
 //   Wikidata says they're a film, series or book.
-//   Albums: ListenBrainz's most-played albums this week, kept only if MusicBrainz says they're studio albums.
+//   Albums: ListenBrainz's most-played albums this week, re-ranked by an estimate of how many different people
+//   played them (so a few superfans can't fill the chart), kept only if MusicBrainz says they're studio albums.
 // Titles are saved in `titles` (like a catalogue add), then each category's list is replaced in one go.
 // If a source is busy or fails, that category keeps yesterday's list.
 import { type Category, type Found, fromMusicBrainz, type MbReleaseGroup, WD_TYPES } from '../_shared/catalogue.ts';
 import { admin } from '../_shared/admin.ts';
 import { fetchJson, mb, sleep, sparql, UA, wdRows } from '../_shared/sources.ts';
-import { lastDays, type ListenRow, mergeListens, sumWikiViews, topPerCategory, type WikiTopDay } from '../_shared/trending.ts';
+import {
+  estimateListeners, lastDays, type ListenRow, mergeListens, type Popularity, sumWikiViews, topPerCategory, type WikiTopDay,
+} from '../_shared/trending.ts';
 
 const KEEP = 50; // per category
 const CANDIDATES = 500; // most-read articles to check each day
@@ -58,8 +61,14 @@ async function fromListenBrainz(): Promise<Ranked[]> {
   const r = (await fetchJson('https://api.listenbrainz.org/1/stats/sitewide/release-groups?range=week&count=100')) as {
     payload?: { release_groups?: ListenRow[] };
   };
-  const merged = mergeListens(r.payload?.release_groups ?? []).slice(0, 80);
-  if (!merged.length) throw new Error('ListenBrainz returned no albums');
+  const weekly = mergeListens(r.payload?.release_groups ?? []);
+  if (!weekly.length) throw new Error('ListenBrainz returned no albums');
+  const pop = (await fetchJson('https://api.listenbrainz.org/1/popularity/release-group', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ release_group_mbids: weekly.map((w) => w.mbid) }),
+  })) as Popularity[];
+  const merged = estimateListeners(weekly, pop).slice(0, 80).map((x) => ({ mbid: x.mbid, listens: x.listeners }));
   const out: Ranked[] = [];
   // Look the albums up in MusicBrainz in two searches (by id), to get the type and the artist credit.
   for (let i = 0; i < merged.length; i += 40) {

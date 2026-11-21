@@ -1,6 +1,7 @@
 // Pure helpers for "Trending this week" from outside sources. No network here, so it can be tested with Node.
 //   Films, TV, books: Wikipedia page views (most-read English Wikipedia articles each day), via Wikidata.
-//   Albums: ListenBrainz sitewide weekly listening stats, via MusicBrainz release groups.
+//   Albums: ListenBrainz weekly plays, turned into an estimate of how many different people played each album,
+//   via MusicBrainz release groups.
 // Both are public domain (CC0) data.
 
 /** One day's answer from the Wikimedia "top articles" API. */
@@ -56,4 +57,28 @@ export function lastDays(days: number, now = new Date()): string[] {
     out.push(`${d.getUTCFullYear()}/${String(d.getUTCMonth() + 1).padStart(2, '0')}/${String(d.getUTCDate()).padStart(2, '0')}`);
   }
   return out;
+}
+
+/** ListenBrainz all-time popularity of an album: total plays and how many different people played it. */
+export type Popularity = { release_group_mbid: string; total_listen_count: number | null; total_user_count: number | null };
+
+/**
+ * Raw play counts let a few superfans swamp the chart (one band's fans can fill the top 20).
+ * Instead estimate how many different people played each album this week:
+ *   weekly plays ÷ average plays per listener (all-time plays ÷ all-time listeners).
+ * All-time totals lag a few days, so a brand-new album can come out higher than its all-time listeners:
+ * cap it there.
+ */
+export function estimateListeners(weekly: { mbid: string; listens: number }[], pop: Popularity[]): { mbid: string; listeners: number }[] {
+  const byId = new Map(pop.map((p) => [p.release_group_mbid, p]));
+  return weekly
+    .map((w) => {
+      const p = byId.get(w.mbid);
+      const users = p?.total_user_count ?? 0;
+      const plays = p?.total_listen_count ?? 0;
+      if (!users || !plays) return { mbid: w.mbid, listeners: 0 };
+      return { mbid: w.mbid, listeners: Math.round(Math.min(users, (w.listens * users) / plays)) };
+    })
+    .filter((x) => x.listeners > 0)
+    .sort((a, b) => b.listeners - a.listeners);
 }
