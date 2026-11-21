@@ -5,6 +5,7 @@ import {
 import { useFonts } from 'expo-font';
 import { router, Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import * as Updates from 'expo-updates';
 import { useEffect } from 'react';
 import { AppState, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -71,11 +72,34 @@ function usePendingInvite(signedIn: boolean) {
   }, [signedIn]);
 }
 
+/**
+ * Over-the-air updates: if a newer update is found quickly at launch, switch to it straight away,
+ * so testers see changes after one reopen. If the check is slow (poor signal), don't interrupt:
+ * the downloaded update is used next time the app opens.
+ */
+function useLatestUpdate() {
+  useEffect(() => {
+    if (__DEV__ || !Updates.isEnabled) return;
+    const started = Date.now();
+    void (async () => {
+      try {
+        const check = await Updates.checkForUpdateAsync();
+        if (!check.isAvailable) return;
+        const got = await Updates.fetchUpdateAsync();
+        if (got.isNew && Date.now() - started < 6000) await Updates.reloadAsync();
+      } catch {
+        // No signal or the update server is down: carry on with the version we have.
+      }
+    })();
+  }, []);
+}
+
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
     Caprasimo_400Regular, Figtree_400Regular, Figtree_500Medium, Figtree_600SemiBold, Figtree_700Bold, Figtree_800ExtraBold,
   });
   useAuthListener();
+  useLatestUpdate();
   const ready = useApp((s) => s.ready);
   const signedIn = useApp((s) => !!s.userId);
   const paid = useApp((s) => !!s.access?.has_access);

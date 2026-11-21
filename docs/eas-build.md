@@ -70,7 +70,7 @@ Open the development build on the phone. It loads the code from a computer runni
 
 ## Sending changes without a new build (over-the-air updates)
 
-Most changes (screens, wording, app logic) can go to phones without rebuilding or reinstalling. The app checks for an update each time it opens, downloads it in the background and uses it the **next** time it's opened. So testers see a change after closing the app fully and opening it twice.
+Most changes (screens, wording, app logic) can go to phones without rebuilding or reinstalling. The app checks for an update each time it opens. If it finds one within a few seconds, it switches to it straight away (a brief reload just after opening). On a slow connection it keeps the download and uses it the next time the app opens. Profile shows which update a phone is running, at the bottom.
 
 ```bash
 npm run update:preview -- --message "What changed"
