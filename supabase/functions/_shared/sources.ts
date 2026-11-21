@@ -5,8 +5,11 @@ import { type Found, fromWikidata, labelOf, type WdEntity, wdCreatorIds } from '
 // (a support email or web page) as a function secret before launch.
 export const UA = `SofaClub/1.0 (${Deno.env.get('CATALOGUE_CONTACT') || 'catalogue lookups'})`;
 // Optional Wikimedia OAuth 2.0 access token: signed requests get much higher rate limits.
-const WM_TOKEN = Deno.env.get('WIKIMEDIA_TOKEN') ?? '';
-const wmAuth = (): Record<string, string> => (WM_TOKEN ? { Authorization: `Bearer ${WM_TOKEN}` } : {});
+// Tolerates a pasted "Bearer " prefix or stray spaces. If Wikimedia rejects it (401/403), we carry on without it
+// for the rest of this request and log it as 'wikimedia-token' failed in source_health, so search never breaks.
+const WM_TOKEN = (Deno.env.get('WIKIMEDIA_TOKEN') ?? '').trim().replace(/^Bearer\s+/i, '');
+let tokenRejected = false;
+const wmAuth = (): Record<string, string> => (WM_TOKEN && !tokenRejected ? { Authorization: `Bearer ${WM_TOKEN}` } : {});
 
 export class Busy extends Error {}
 export const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -61,12 +64,19 @@ export async function fetchJson(url: string, init: { headers?: Record<string, st
 // ---- Wikidata ---------------------------------------------------------------
 
 export async function wd(params: Record<string, string>, tries = 3, wait = 1200) {
-  const r = (await fetchJson(
-    'https://www.wikidata.org/w/api.php?' + new URLSearchParams({ ...params, format: 'json', formatversion: '2' }),
-    { headers: wmAuth() },
-    tries,
-    wait,
-  )) as { error?: { code?: string } };
+  const url = 'https://www.wikidata.org/w/api.php?' + new URLSearchParams({ ...params, format: 'json', formatversion: '2' });
+  let r: { error?: { code?: string } };
+  try {
+    r = (await fetchJson(url, { headers: wmAuth() }, tries, wait)) as { error?: { code?: string } };
+  } catch (e) {
+    // A rejected token: fall back to asking anonymously, and remember for the rest of this request.
+    if (!WM_TOKEN || tokenRejected || !/answered 40[13]/.test(String(e))) throw e;
+    tokenRejected = true;
+    mark('wikidata', 'failed', -1); // the source is fine; it was our token
+    mark('wikimedia-token', 'failed');
+    console.error('WIKIMEDIA_TOKEN was rejected by Wikidata; continuing without it');
+    r = (await fetchJson(url, {}, tries, wait)) as { error?: { code?: string } };
+  }
   // Wikidata sometimes refuses inside a normal 200 answer (rate limited, server lag). Treat that as busy,
   // never as "no results", or we'd cache an empty answer.
   if (r.error) {
