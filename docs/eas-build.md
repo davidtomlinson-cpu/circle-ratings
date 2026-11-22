@@ -112,6 +112,13 @@ That sends the current code to every **preview** build (our test apps). `npm run
 - **RevenueCat keys:** once they exist, add them to `.env` (they're public keys). A development build picks them up straight away; preview and store builds need building again.
 - **Push notifications** need `expo-notifications` and push credentials. That's a separate piece of work.
 
-## Known loose end
+## iOS credentials (live app)
 
-On expo.dev, the SofaClub iOS credentials still have an **App Store** entry that points at the Ad Hoc (test-device) profile. That happened when the profile was uploaded through the website wizard. It doesn't affect test builds. Before the first TestFlight or App Store build, remove that App Store entry's profile so Expo can make a proper App Store one. The Ad Hoc entry is the one test builds use: keep it.
+Fixed 22 Nov 2026: the App Store slot for `com.davala.circleratings` now holds the **SofaClub App Store** profile, signed with the **iOS Distribution** certificate that expires 30 Oct 2027 (not the "Distribution" one that expires 21 Oct). The Ad Hoc slots are for test builds: keep them. The test app (`.test`) still has an Ad Hoc profile in its App Store slot; that only matters if the test app ever goes to TestFlight.
+
+Uploads to TestFlight use the App Store Connect key Expo already holds, and the app's App Store ID (`6837823830`) in `eas.json`:
+
+```bash
+npx eas-cli@latest build --platform ios --profile production
+npx eas-cli@latest submit --platform ios --profile production --latest
+```
