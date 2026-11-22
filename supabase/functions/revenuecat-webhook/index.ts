@@ -4,15 +4,23 @@
 import { safeEqual, userIdsFromEvent } from '../_shared/revenuecat.ts';
 import { syncUser } from '../_shared/sync.ts';
 
+// Forgive the usual copy-paste slips in either place: spaces, wrapping quotes, a "Bearer " prefix.
+const clean = (s: string) => s.trim().replace(/^bearer\s+/i, '').replace(/^["']|["']$/g, '').trim();
+
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 
 Deno.serve(async (req) => {
   if (req.method !== 'POST') return json(405, { error: 'method_not_allowed' });
-  const expected = Deno.env.get('REVENUECAT_WEBHOOK_AUTH');
+  const expected = clean(Deno.env.get('REVENUECAT_WEBHOOK_AUTH') ?? '');
   if (!expected) return json(503, { error: 'not_configured' });
-  const got = req.headers.get('authorization') ?? '';
-  if (!safeEqual(got, expected) && !safeEqual(got, `Bearer ${expected}`)) return json(401, { error: 'unauthorized' });
+  const raw = req.headers.get('authorization') ?? '';
+  const got = clean(raw);
+  if (!safeEqual(got, expected)) {
+    // Never log the values: only enough to tell a typo from a missing or different header.
+    console.warn(`webhook auth mismatch: header ${raw ? `${got.length} chars${/^bearer\s/i.test(raw.trim()) ? ' (Bearer)' : ''}` : 'missing'}, secret ${expected.length} chars`);
+    return json(401, { error: 'unauthorized' });
+  }
 
   let event: Record<string, unknown>;
   try {
