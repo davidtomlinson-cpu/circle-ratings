@@ -120,3 +120,11 @@ Expect a 13+ rating.
 
 - Price: Free (subscriptions are sold in-app).
 - Availability: United Kingdom only for launch. The terms and privacy policy are written for UK law; add other countries later after legal review.
+
+## Launch
+
+SofaClub 1.0 (build 3) went live on the UK App Store on 23 November 2026.
+
+**Keep the reviewer account.** `appreview@sofaclub.invalid` (friends Ana, Ben, Cara, Dev) is needed for every future App Review. Don't delete it, and keep its password in the review notes.
+
+**Shipping fixes.** JavaScript-only fixes go out over the air: check the live runtime first (`npx expo-updates runtimeversion:resolve --platform ios`), then `npm run update:production`. Anything that changes native code needs a new build and a new App Store submission.
