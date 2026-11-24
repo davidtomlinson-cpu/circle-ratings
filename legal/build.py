@@ -21,7 +21,7 @@ def page(title, body):
 <h1>{title}</h1><p class="meta">Last updated {UPDATED}</p>
 {body}
 </main></body></html>"""
-for slug, title in [('terms', 'SofaClub Terms of Use'), ('privacy', 'SofaClub Privacy Policy')]:
+for slug, title in [('terms', 'SofaClub Terms of Use'), ('privacy', 'SofaClub Privacy Policy'), ('delete-account', 'Delete your SofaClub account')]:
     d = out / slug; d.mkdir(parents=True, exist_ok=True)
     (d / 'index.html').write_text(page(title, (here / f'{slug}.html').read_text()))
 (out / 'index.html').write_text(f"""<!doctype html><html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
