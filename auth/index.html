@@ -1,0 +1,57 @@
+<!doctype html><html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SofaClub</title><style>
+:root{--bg:#fbf7f2;--text:#231a15;--muted:#6b5d54;--line:#e6dcd2;--accent:#b5452f;--th:#f3ebe2}
+@media (prefers-color-scheme:dark){:root{--bg:#1a1411;--text:#f2e9e1;--muted:#b3a397;--line:#3a2f29;--accent:#f08a6d;--th:#261d18}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+main{max-width:720px;margin:0 auto;padding:32px 16px 64px}h1{font-size:30px;line-height:1.2;margin:0 0 4px}
+h2{font-size:20px;margin:36px 0 8px}.meta{color:var(--muted);margin:0 0 24px}a{color:var(--accent)}
+nav{display:flex;gap:16px;margin-bottom:28px;font-size:14px}table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{border:1px solid var(--line);padding:8px;text-align:left;vertical-align:top}th{background:var(--th)}
+.wrap{overflow-x:auto}li{margin:4px 0}
+</style></head><body><main>
+<nav><a href="../">SofaClub</a><a href="../terms/">Terms of use</a><a href="../privacy/">Privacy policy</a></nav>
+<h1>SofaClub</h1>
+<div id="msg"><p>Checking your link…</p></div>
+<form id="pw" hidden>
+<h2>Choose a new password</h2>
+<p><input id="p1" type="password" autocomplete="new-password" placeholder="New password (8 or more characters)" minlength="8" required style="width:100%;padding:12px;font-size:16px;border-radius:10px;border:1px solid var(--line);background:transparent;color:var(--text)"></p>
+<p><button type="submit" style="padding:12px 20px;font-size:16px;border-radius:24px;border:0;background:var(--accent);color:#fff">Save new password</button></p>
+<p id="err" style="color:var(--accent)"></p>
+</form>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+(function () {
+  var msg = document.getElementById('msg'), form = document.getElementById('pw'), err = document.getElementById('err');
+  var say = function (h) { msg.innerHTML = h; };
+  var q = new URLSearchParams((location.hash || '').replace(/^#/, '') || location.search.replace(/^\?/, ''));
+  if (q.get('error') || q.get('error_code')) {
+    var expired = /expired|invalid/i.test((q.get('error_code') || '') + (q.get('error_description') || ''));
+    say('<h2>' + (expired ? 'This link has expired' : 'That link didn’t work') + '</h2><p>Links only work once and for a limited time. Open SofaClub and ' + (expired ? 'sign in, or tap <strong>Forgot password</strong> to get a new link.' : 'try again.') + '</p>');
+    return;
+  }
+  var type = q.get('type');
+  if (type === 'recovery' && q.get('access_token')) {
+    var sb = supabase.createClient('https://fkyhmaorcrqzdbvktvcv.supabase.co', 'sb_publishable_WKB3UuT0h1z-5xsOpmNrVQ_MoJxc_Zz', { auth: { persistSession: false, detectSessionInUrl: false } });
+    sb.auth.setSession({ access_token: q.get('access_token'), refresh_token: q.get('refresh_token') || '' }).then(function (r) {
+      if (r.error) { say('<h2>This link has expired</h2><p>Open SofaClub and tap <strong>Forgot password</strong> to get a new one.</p>'); return; }
+      msg.innerHTML = ''; form.hidden = false;
+      form.onsubmit = function (e) {
+        e.preventDefault(); err.textContent = '';
+        var p = document.getElementById('p1').value;
+        if (p.length < 8) { err.textContent = 'Use at least 8 characters.'; return; }
+        sb.auth.updateUser({ password: p }).then(function (u) {
+          if (u.error) { err.textContent = u.error.message; return; }
+          form.hidden = true;
+          say('<h2>Password changed</h2><p>Open SofaClub and sign in with your new password.</p>');
+          history.replaceState(null, '', location.pathname);
+        });
+      };
+    });
+    return;
+  }
+  say('<h2>Your email is confirmed</h2><p>You’re all set. Open the SofaClub app and sign in with your email and password.</p>');
+  history.replaceState(null, '', location.pathname);
+})();
+</script>
+
+</main></body></html>
