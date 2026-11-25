@@ -65,7 +65,7 @@ export async function identify(userId: string | null) {
   }
 }
 
-const tierOf = (id: string) => (id.match(/cr_(individual|family|extended)/)?.[1] as Tier | undefined) ?? null;
+const tierOf = (id: string) => (id.toLowerCase().match(/(?:^|_)(individual|family|extended)(?:[_:.]|$)/)?.[1] as Tier | undefined) ?? null;
 const periodOf = (id: string) => (/annual|year/i.test(id) ? 'year' : 'month') as Period;
 
 export async function loadPlans(): Promise<Plan[]> {

@@ -40,7 +40,7 @@ export type SubscriptionRow = {
 };
 
 export function tierOf(productId: string): Tier | null {
-  const m = productId.toLowerCase().match(/cr_(individual|family|extended)/);
+  const m = productId.toLowerCase().match(/(?:^|_)(individual|family|extended)(?:[_:.]|$)/);
   return (m?.[1] as Tier) ?? null;
 }
 
