@@ -21,9 +21,11 @@ def page(title, body):
 <h1>{title}</h1><p class="meta">Last updated {UPDATED}</p>
 {body}
 </main></body></html>"""
-for slug, title in [('terms', 'SofaClub Terms of Use'), ('privacy', 'SofaClub Privacy Policy'), ('delete-account', 'Delete your SofaClub account')]:
+for slug, title in [('terms', 'SofaClub Terms of Use'), ('privacy', 'SofaClub Privacy Policy'), ('delete-account', 'Delete your SofaClub account'), ('auth', 'SofaClub')]:
     d = out / slug; d.mkdir(parents=True, exist_ok=True)
-    (d / 'index.html').write_text(page(title, (here / f'{slug}.html').read_text()))
+    html_out = page(title, (here / f'{slug}.html').read_text())
+    if slug == 'auth': html_out = html_out.replace(f'<p class="meta">Last updated {UPDATED}</p>', '')
+    (d / 'index.html').write_text(html_out)
 (out / 'index.html').write_text(f"""<!doctype html><html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>SofaClub</title><style>{CSS}</style></head><body><main><h1>SofaClub</h1>
 <p class="meta">Rate films, TV, books and albums with your family and friends.</p>

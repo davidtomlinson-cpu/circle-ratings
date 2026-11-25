@@ -16,6 +16,10 @@ export async function syncUser(userId: string): Promise<{ ok: boolean; status: s
   const { data: profile } = await db.from('profiles').select('id').eq('id', userId).maybeSingle();
   if (!profile) return { ok: true, status: 'unknown_user' };
 
+  // Complimentary access granted by hand (store 'comp') wins while it lasts: store purchases never overwrite it.
+  const { data: current } = await db.from('subscriptions').select('store, expires_at').eq('user_id', userId).maybeSingle();
+  if (current?.store === 'comp' && new Date(current.expires_at) > new Date()) return { ok: true, status: 'complimentary' };
+
   const res = await fetch(`https://api.revenuecat.com/v1/subscribers/${encodeURIComponent(userId)}`, {
     headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
   });
