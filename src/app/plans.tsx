@@ -23,8 +23,17 @@ export default function Plans() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
+  const [loadError, setLoadError] = useState('');
+  const load = () =>
+    loadPlans()
+      .then((p) => (p.length ? setPlans(p) : setLoadError('The store didn’t return any plans.')))
+      .catch((e: Error) => setLoadError(e?.message || 'Couldn’t reach the store.'));
+  const retry = () => {
+    setLoadError('');
+    void load();
+  };
   useEffect(() => {
-    loadPlans().then(setPlans).catch(() => setError('Couldn’t load plans from the store. Check your connection and try again.'));
+    void load();
   }, []);
 
   const plan = plans?.find((p) => p.tier === tier && p.period === period);
@@ -85,7 +94,17 @@ export default function Plans() {
       )}
 
       <PeriodSwitch value={period} onChange={setPeriod} />
-      {plans ? <PlanCards plans={plans} period={period} value={tier} onChange={setTier} /> : <T size={13} color={c.textMuted} center>Loading plans…</T>}
+      {plans ? (
+        <PlanCards plans={plans} period={period} value={tier} onChange={setTier} />
+      ) : loadError ? (
+        <Card style={{ padding: 14, gap: 8 }}>
+          <T size={13} color={c.textSoft}>Couldn’t load the plans. Check your connection and try again.</T>
+          <T size={11} color={c.textMuted}>{loadError}</T>
+          <Btn small kind="secondary" label="Try again" onPress={retry} />
+        </Card>
+      ) : (
+        <T size={13} color={c.textMuted} center>Loading plans…</T>
+      )}
 
       {!available() && (
         <Card style={{ padding: 14 }}>

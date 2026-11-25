@@ -77,7 +77,15 @@ export async function loadPlans(): Promise<Plan[]> {
       })),
     );
   }
-  const offerings = await Purchases.getOfferings();
+  // Never leave the screen on "Loading plans…" for ever: give the store 20 seconds, then show an error with a retry.
+  if (!configuredFor) {
+    const { data } = await supabase.auth.getSession();
+    await identify(data.session?.user.id ?? null);
+  }
+  const offerings = await Promise.race([
+    Purchases.getOfferings(),
+    new Promise<never>((_, reject) => setTimeout(() => reject(new Error('The store took too long to answer.')), 20000)),
+  ]);
   const pkgs = offerings.current?.availablePackages ?? [];
   let eligibility: Record<string, { status: INTRO_ELIGIBILITY_STATUS }> = {};
   if (Platform.OS === 'ios' && pkgs.length) {
