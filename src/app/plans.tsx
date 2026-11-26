@@ -113,11 +113,14 @@ export default function Plans() {
       )}
       {!!error && <Card bg={color.a800} style={{ padding: 14 }}><T size={13} color={color.a100}>{error}</T></Card>}
 
-      <Btn
-        label={busy ? 'Please wait…' : trial ? 'Start my free trial' : `Subscribe for ${plan?.priceString ?? ''} a ${per}`}
-        disabled={!plan || busy || !available()}
-        onPress={start}
-      />
+      {/* No button until a real plan has loaded: otherwise it reads "Subscribe for  a month". */}
+      {!!plan && (
+        <Btn
+          label={busy ? 'Please wait…' : trial ? 'Start my free trial' : `Subscribe for ${plan.priceString} a ${per}`}
+          disabled={busy || !available()}
+          onPress={start}
+        />
+      )}
       {/* Required disclosure: price, renewal, how to cancel. */}
       <T size={12} color={c.textMuted} center>
         {plan
